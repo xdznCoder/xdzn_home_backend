@@ -179,4 +179,4 @@ git push -u origin feature/member-self-service
 - 每完成一个小任务就提交一次（不要攒一堆）。
 - 每周五前提交 PR，负责人 Review 后合并。
 
-详细的分周任务见 `docs/development-plan.md`。
+完整的 Git 协作流程（分支、提交规范、PR、冲突处理等）见 **`docs/git-workflow.md`**；分周任务见 `docs/development-plan.md`。
