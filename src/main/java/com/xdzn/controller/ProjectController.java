@@ -4,6 +4,9 @@ import com.xdzn.common.Result;
 import com.xdzn.model.dto.ProjectVO;
 import com.xdzn.model.entity.Project;
 import com.xdzn.service.ProjectService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +21,7 @@ import java.util.Map;
  *
  * @author xdzn
  */
+@Tag(name = "项目接口", description = "官网项目展示与管理的增删改查（写操作需 admin 权限）")
 @RestController
 @RequestMapping("/api/projects")
 public class ProjectController {
@@ -41,6 +45,7 @@ public class ProjectController {
      *
      * @return 项目视图对象列表
      */
+    @Operation(summary = "查询全部项目", description = "返回全部项目（含技术栈名称列表），结果经 Spring Cache 缓存 10 分钟")
     @GetMapping
     public Result<List<ProjectVO>> findAll() {
         return Result.ok(projectService.findAll());
@@ -52,8 +57,11 @@ public class ProjectController {
      * @param id 项目 id
      * @return 项目视图对象；不存在时返回 404
      */
+    @Operation(summary = "查询项目详情", description = "根据 id 查询单个项目（含技术栈名称列表）")
     @GetMapping("/{id}")
-    public Result<ProjectVO> findById(@PathVariable Long id) {
+    public Result<ProjectVO> findById(
+            @Parameter(description = "项目 id", required = true, example = "1")
+            @PathVariable Long id) {
         ProjectVO vo = projectService.findById(id);
         if (vo == null) return Result.notFound();
         return Result.ok(vo);
@@ -65,6 +73,7 @@ public class ProjectController {
      * @param body 请求体，含项目字段与技术栈 id 列表
      * @return 创建后的项目视图对象
      */
+    @Operation(summary = "创建项目", description = "创建项目并同步其技术栈关联，需 admin 权限")
     @PostMapping
     public Result<ProjectVO> create(@RequestBody Map<String, Object> body) {
         Project project = parseProject(body);
@@ -79,8 +88,12 @@ public class ProjectController {
      * @param body 请求体，含项目字段与技术栈 id 列表
      * @return 更新后的项目视图对象
      */
+    @Operation(summary = "更新项目", description = "按 id 更新项目并同步其技术栈关联，需 admin 权限")
     @PutMapping("/{id}")
-    public Result<ProjectVO> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+    public Result<ProjectVO> update(
+            @Parameter(description = "项目 id", required = true, example = "1")
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body) {
         Project project = parseProject(body);
         List<Long> techStackIds = parseTechStackIds(body);
         return Result.ok(projectService.update(id, project, techStackIds));
@@ -92,8 +105,11 @@ public class ProjectController {
      * @param id 项目 id
      * @return 操作结果
      */
+    @Operation(summary = "删除项目", description = "删除项目及其技术栈关联，需 admin 权限")
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(
+            @Parameter(description = "项目 id", required = true, example = "1")
+            @PathVariable Long id) {
         projectService.delete(id);
         return Result.ok();
     }

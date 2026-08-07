@@ -3,6 +3,9 @@ package com.xdzn.controller;
 import com.xdzn.common.Result;
 import com.xdzn.model.entity.TimelineEvent;
 import com.xdzn.service.TimelineEventService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
  *
  * @author xdzn
  */
+@Tag(name = "时间线接口", description = "官网团队历程（大事记）展示与管理的增删改查（写操作需 admin 权限）")
 @RestController
 @RequestMapping("/api/timeline")
 public class TimelineController {
@@ -37,6 +41,7 @@ public class TimelineController {
      *
      * @return 事件列表
      */
+    @Operation(summary = "查询全部时间线", description = "返回全部团队历程事件（按排序号升序），结果经 Spring Cache 缓存 10 分钟")
     @GetMapping
     public Result<List<TimelineEvent>> findAll() {
         return Result.ok(timelineService.findAll());
@@ -48,8 +53,11 @@ public class TimelineController {
      * @param id 事件 id
      * @return 事件信息；不存在时返回 404
      */
+    @Operation(summary = "查询时间线详情", description = "根据 id 查询单个时间线事件")
     @GetMapping("/{id}")
-    public Result<TimelineEvent> findById(@PathVariable Long id) {
+    public Result<TimelineEvent> findById(
+            @Parameter(description = "事件 id", required = true, example = "1")
+            @PathVariable Long id) {
         TimelineEvent event = timelineService.findById(id);
         if (event == null) return Result.notFound();
         return Result.ok(event);
@@ -61,6 +69,7 @@ public class TimelineController {
      * @param event 事件信息
      * @return 创建后的事件
      */
+    @Operation(summary = "创建时间线事件", description = "新增团队历程事件，需 admin 权限")
     @PostMapping
     public Result<TimelineEvent> create(@RequestBody TimelineEvent event) {
         return Result.ok(timelineService.create(event));
@@ -73,8 +82,12 @@ public class TimelineController {
      * @param event 事件信息
      * @return 更新后的事件
      */
+    @Operation(summary = "更新时间线事件", description = "按 id 更新时间线事件，需 admin 权限")
     @PutMapping("/{id}")
-    public Result<TimelineEvent> update(@PathVariable Long id, @RequestBody TimelineEvent event) {
+    public Result<TimelineEvent> update(
+            @Parameter(description = "事件 id", required = true, example = "1")
+            @PathVariable Long id,
+            @RequestBody TimelineEvent event) {
         return Result.ok(timelineService.update(id, event));
     }
 
@@ -84,8 +97,11 @@ public class TimelineController {
      * @param id 事件 id
      * @return 操作结果
      */
+    @Operation(summary = "删除时间线事件", description = "删除时间线事件，需 admin 权限")
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Void> delete(
+            @Parameter(description = "事件 id", required = true, example = "1")
+            @PathVariable Long id) {
         timelineService.delete(id);
         return Result.ok();
     }
