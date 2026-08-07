@@ -7,6 +7,8 @@ import com.xdzn.model.dto.AuthUser;
 import com.xdzn.model.dto.LoginDto;
 import com.xdzn.model.dto.RegisterDto;
 import com.xdzn.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,7 @@ import java.util.Map;
  *
  * @author xdzn
  */
+@Tag(name = "认证接口", description = "注册、登录、登出与当前用户信息查询（基于 Sa-Token，Bearer 令牌）")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -47,6 +50,7 @@ public class AuthController {
      * @param dto 注册参数（用户名、邮箱、密码）
      * @return access_token 与用户信息
      */
+    @Operation(summary = "用户注册", description = "注册新用户（角色为 member），成功后直接登录并返回 access_token 与用户信息")
     @PostMapping("/register")
     public Result<Map<String, Object>> register(@RequestBody @Valid RegisterDto dto) {
         AuthSession session = authService.register(dto);
@@ -62,6 +66,7 @@ public class AuthController {
      * @param dto 登录参数（邮箱、密码）
      * @return access_token 与用户信息
      */
+    @Operation(summary = "用户登录", description = "使用邮箱 + 密码登录，返回 access_token 与用户信息；密码错误会记录失败计数（防暴力破解）")
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody @Valid LoginDto dto) {
         AuthSession session = authService.login(dto);
@@ -76,6 +81,7 @@ public class AuthController {
      *
      * @return 操作结果
      */
+    @Operation(summary = "退出登录", description = "使当前 access_token 立即失效（基于 Redis 会话，登出后同 token 再访问会返回 401）")
     @PostMapping("/logout")
     public Result<Map<String, Boolean>> logout() {
         authService.logout();
@@ -89,6 +95,7 @@ public class AuthController {
      *
      * @return access_token 与用户信息
      */
+    @Operation(summary = "获取当前用户", description = "返回当前登录用户信息与 access_token；需携带 Authorization: Bearer 头")
     @GetMapping("/me")
     public Result<Map<String, Object>> me() {
         AuthUser user = authService.me();
