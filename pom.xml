@@ -108,6 +108,13 @@
             <version>5.8.35</version>
         </dependency>
 
+        <!-- Knife4j 接口文档（基于 SpringDoc OpenAPI，适配 Spring Boot 3 / Jakarta） -->
+        <dependency>
+            <groupId>com.github.xiaoymin</groupId>
+            <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+            <version>4.5.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
