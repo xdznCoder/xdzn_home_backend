@@ -1,9 +1,14 @@
 package com.xdzn.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xdzn.mapper.MemberMapper;
+import com.xdzn.model.dto.MemberDto;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.Member;
 import com.xdzn.service.MemberService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -35,6 +40,21 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     }
 
     /**
+     * 分页查询成员（按排序号升序）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @return 分页结果
+     */
+    @Override
+    public PageResult<Member> findAllByPage(long current, long size) {
+        Page<Member> page = new Page<>(current, size);
+        lambdaUpdate().orderByAsc(Member::getOrder);
+        Page<Member> result = page(page, new LambdaQueryWrapper<Member>().orderByAsc(Member::getOrder));
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), result.getRecords());
+    }
+
+    /**
      * 根据 id 查询成员
      *
      * @param id 成员 id
@@ -48,12 +68,14 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     /**
      * 创建成员，并失效成员列表缓存
      *
-     * @param member 成员信息
+     * @param dto 成员DTO
      * @return 创建后的成员
      */
     @Override
     @CacheEvict(value = "members", key = "'all'")
-    public Member create(Member member) {
+    public Member create(MemberDto dto) {
+        Member member = new Member();
+        BeanUtils.copyProperties(dto, member);
         save(member);
         return member;
     }
@@ -61,14 +83,16 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     /**
      * 更新成员，并失效成员列表缓存
      *
-     * @param id     成员 id
-     * @param member 成员信息
+     * @param id  成员 id
+     * @param dto 成员DTO
      * @return 更新后的成员
      */
     @Override
     @CacheEvict(value = "members", key = "'all'")
-    public Member update(Long id, Member member) {
+    public Member update(Long id, MemberDto dto) {
+        Member member = new Member();
         member.setId(id);
+        BeanUtils.copyProperties(dto, member);
         updateById(member);
         return getById(id);
     }
