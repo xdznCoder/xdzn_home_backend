@@ -1,11 +1,14 @@
 package com.xdzn.controller;
 
 import com.xdzn.common.Result;
+import com.xdzn.model.dto.PageResult;
+import com.xdzn.model.dto.TestimonialDto;
 import com.xdzn.model.entity.Testimonial;
 import com.xdzn.service.TestimonialService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +51,23 @@ public class TestimonialController {
     }
 
     /**
+     * 分页查询评价
+     *
+     * @param current 当前页码，默认 1
+     * @param size    每页大小，默认 10
+     * @return 分页结果
+     */
+    @Operation(summary = "分页查询评价", description = "分页查询用户评价（按排序号升序）")
+    @GetMapping("/page")
+    public Result<PageResult<Testimonial>> findAllByPage(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(testimonialService.findAllByPage(current, size));
+    }
+
+    /**
      * 根据 id 查询评价详情
      *
      * @param id 评价 id
@@ -66,20 +86,20 @@ public class TestimonialController {
     /**
      * 创建评价
      *
-     * @param testimonial 评价信息
+     * @param dto 评价DTO
      * @return 创建后的评价
      */
     @Operation(summary = "创建评价", description = "新增用户评价，需 admin 权限")
     @PostMapping
-    public Result<Testimonial> create(@RequestBody Testimonial testimonial) {
-        return Result.ok(testimonialService.create(testimonial));
+    public Result<Testimonial> create(@Valid @RequestBody TestimonialDto dto) {
+        return Result.ok(testimonialService.create(dto));
     }
 
     /**
      * 更新评价
      *
-     * @param id          评价 id
-     * @param testimonial 评价信息
+     * @param id  评价 id
+     * @param dto 评价DTO
      * @return 更新后的评价
      */
     @Operation(summary = "更新评价", description = "按 id 更新用户评价，需 admin 权限")
@@ -87,8 +107,8 @@ public class TestimonialController {
     public Result<Testimonial> update(
             @Parameter(description = "评价 id", required = true, example = "1")
             @PathVariable Long id,
-            @RequestBody Testimonial testimonial) {
-        return Result.ok(testimonialService.update(id, testimonial));
+            @Valid @RequestBody TestimonialDto dto) {
+        return Result.ok(testimonialService.update(id, dto));
     }
 
     /**

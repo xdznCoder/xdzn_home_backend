@@ -1,11 +1,14 @@
 package com.xdzn.controller;
 
 import com.xdzn.common.Result;
+import com.xdzn.model.dto.MemberDto;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.Member;
 import com.xdzn.service.MemberService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +51,23 @@ public class MemberController {
     }
 
     /**
+     * 分页查询成员
+     *
+     * @param current 当前页码，默认 1
+     * @param size    每页大小，默认 10
+     * @return 分页结果
+     */
+    @Operation(summary = "分页查询成员", description = "分页查询团队成员（按排序号升序）")
+    @GetMapping("/page")
+    public Result<PageResult<Member>> findAllByPage(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(memberService.findAllByPage(current, size));
+    }
+
+    /**
      * 根据 id 查询成员详情
      *
      * @param id 成员 id
@@ -66,20 +86,20 @@ public class MemberController {
     /**
      * 创建成员
      *
-     * @param member 成员信息
+     * @param dto 成员DTO
      * @return 创建后的成员
      */
     @Operation(summary = "创建成员", description = "新增团队成员，需 admin 权限")
     @PostMapping
-    public Result<Member> create(@RequestBody Member member) {
-        return Result.ok(memberService.create(member));
+    public Result<Member> create(@Valid @RequestBody MemberDto dto) {
+        return Result.ok(memberService.create(dto));
     }
 
     /**
      * 更新成员
      *
-     * @param id     成员 id
-     * @param member 成员信息
+     * @param id  成员 id
+     * @param dto 成员DTO
      * @return 更新后的成员
      */
     @Operation(summary = "更新成员", description = "按 id 更新成员信息，需 admin 权限")
@@ -87,8 +107,8 @@ public class MemberController {
     public Result<Member> update(
             @Parameter(description = "成员 id", required = true, example = "1")
             @PathVariable Long id,
-            @RequestBody Member member) {
-        return Result.ok(memberService.update(id, member));
+            @Valid @RequestBody MemberDto dto) {
+        return Result.ok(memberService.update(id, dto));
     }
 
     /**
