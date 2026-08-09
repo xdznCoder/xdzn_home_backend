@@ -1,6 +1,7 @@
 package com.xdzn.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -53,6 +54,7 @@ public class Testimonial {
     /**
      * 展示排序号（升序排列，值越小越靠前）
      */
+    @TableField(value = "`order`")
     private Integer order;
 
     /**
