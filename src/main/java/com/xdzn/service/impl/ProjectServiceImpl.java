@@ -1,10 +1,13 @@
 package com.xdzn.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xdzn.mapper.ProjectMapper;
 import com.xdzn.mapper.ProjectTechStackMapper;
 import com.xdzn.mapper.TechStackItemMapper;
+import com.xdzn.model.dto.PageResult;
+import com.xdzn.model.dto.ProjectDto;
 import com.xdzn.model.dto.ProjectVO;
 import com.xdzn.model.entity.Project;
 import com.xdzn.model.entity.ProjectTechStack;
@@ -74,6 +77,32 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
     }
 
     /**
+     * 分页查询项目（含技术栈信息，按排序号升序）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @return 分页结果
+     */
+    @Override
+    public PageResult<ProjectVO> findAllByPage(long current, long size) {
+        Page<Project> page = new Page<>(current, size);
+        Page<Project> result = page(page, new LambdaQueryWrapper<Project>().orderByAsc(Project::getOrder));
+
+        if (result.getRecords().isEmpty()) {
+            return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), List.of());
+        }
+
+        List<Long> projectIds = result.getRecords().stream().map(Project::getId).toList();
+        Map<Long, List<String>> techMap = buildTechMap(projectIds);
+
+        List<ProjectVO> voList = result.getRecords().stream()
+                .map(p -> toVO(p, techMap.getOrDefault(p.getId(), List.of())))
+                .collect(Collectors.toList());
+
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), voList);
+    }
+
+    /**
      * 根据 id 查询项目详情（含技术栈信息）
      *
      * @param id 项目 id
@@ -91,35 +120,37 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
     /**
      * 创建项目并同步其技术栈关联，失效项目列表缓存
      *
-     * @param project      项目实体
-     * @param techStackIds 技术栈 id 列表
+     * @param dto 项目DTO
      * @return 创建后的项目视图对象
      */
     @Override
     @Transactional
     @CacheEvict(value = "projects", key = "'all'")
-    public ProjectVO create(Project project, List<Long> techStackIds) {
+    public ProjectVO create(ProjectDto dto) {
+        Project project = new Project();
+        BeanUtils.copyProperties(dto, project);
         save(project);
-        syncTechStack(project.getId(), techStackIds);
-        return toVO(project, getTechStackNames(techStackIds));
+        syncTechStack(project.getId(), dto.getTechStackIds());
+        return toVO(project, getTechStackNames(dto.getTechStackIds()));
     }
 
     /**
      * 更新项目并同步其技术栈关联，失效项目列表缓存
      *
-     * @param id           项目 id
-     * @param project      项目实体
-     * @param techStackIds 技术栈 id 列表
+     * @param id  项目 id
+     * @param dto 项目DTO
      * @return 更新后的项目视图对象
      */
     @Override
     @Transactional
     @CacheEvict(value = "projects", key = "'all'")
-    public ProjectVO update(Long id, Project project, List<Long> techStackIds) {
+    public ProjectVO update(Long id, ProjectDto dto) {
+        Project project = new Project();
         project.setId(id);
+        BeanUtils.copyProperties(dto, project);
         updateById(project);
-        syncTechStack(id, techStackIds);
-        return toVO(getById(id), getTechStackNames(techStackIds));
+        syncTechStack(id, dto.getTechStackIds());
+        return toVO(getById(id), getTechStackNames(dto.getTechStackIds()));
     }
 
     /**
