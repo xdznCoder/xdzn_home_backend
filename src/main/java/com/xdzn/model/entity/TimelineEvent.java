@@ -42,9 +42,9 @@ public class TimelineEvent {
     private String description;
 
     /**
-     * 展示排序号（升序排列，值越小越靠前）；order 为 MySQL 保留字，需反引号转义
+     * 展示排序号（升序排列，值越小越靠前）
      */
-    @TableField("`order`")
+    @TableField(value = "`order`")
     private Integer order;
 
     /**

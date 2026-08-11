@@ -41,6 +41,26 @@ import java.time.Duration;
 public class RedisConfig {
 
     /**
+     * 声明自定义 ObjectMapper，供 Redis 值序列化使用
+     * <p>
+     * 注册 JavaTimeModule 以支持 Java 8 日期时间类型（LocalDateTime 等），
+     * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
+     * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
+     *
+     * @return ObjectMapper 实例
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // 保留类型信息，保证反序列化时还原具体类型
+        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        return mapper;
+    }
+
+    /**
      * 声明 StringRedisTemplate 的 Key/Value 序列化器为字符串
      *
      * @param factory Redis 连接工厂
@@ -51,23 +71,6 @@ public class RedisConfig {
         StringRedisTemplate template = new StringRedisTemplate();
         template.setConnectionFactory(factory);
         return template;
-    }
-
-    /**
-     * 创建配置了 JSR-310 时间模块与类型信息的 ObjectMapper，
-     * 供 Redis 值序列化使用（否则 LocalDateTime 等字段无法序列化）
-     *
-     * @return 配置完成的 ObjectMapper
-     */
-    private ObjectMapper redisObjectMapper() {
-        ObjectMapper om = new ObjectMapper();
-        // 支持 Java 8 日期时间类型（LocalDateTime 等）
-        om.registerModule(new JavaTimeModule());
-        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // 保留类型信息，保证反序列化时还原具体类型
-        om.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
-        return om;
     }
 
     /**
@@ -86,7 +89,7 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(redisObjectMapper());
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper());
         // key 与 Hash 字段名使用字符串序列化
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
@@ -108,12 +111,15 @@ public class RedisConfig {
      */
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory factory) {
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper());
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new StringRedisSerializer()))
+                        .fromSerializer(stringSerializer))
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper())));
+                        .fromSerializer(jsonSerializer));
 
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(defaultConfig)
@@ -121,44 +127,44 @@ public class RedisConfig {
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .withCacheConfiguration("projects",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .withCacheConfiguration("techStack",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .withCacheConfiguration("timeline",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .withCacheConfiguration("testimonials",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(10))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .withCacheConfiguration("dashboard",
                         RedisCacheConfiguration.defaultCacheConfig()
                                 .entryTtl(Duration.ofMinutes(5))
                                 .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new StringRedisSerializer()))
+                                        .fromSerializer(stringSerializer))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper()))))
+                                        .fromSerializer(jsonSerializer)))
                 .build();
     }
 }

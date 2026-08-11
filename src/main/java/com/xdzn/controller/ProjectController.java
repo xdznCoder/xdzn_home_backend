@@ -1,23 +1,22 @@
 package com.xdzn.controller;
 
 import com.xdzn.common.Result;
+import com.xdzn.model.dto.PageResult;
+import com.xdzn.model.dto.ProjectDto;
 import com.xdzn.model.dto.ProjectVO;
-import com.xdzn.model.entity.Project;
 import com.xdzn.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * ProjectController
  * <p>
  * 项目相关接口：项目列表、详情、增删改。
- * 创建/更新时支持携带技术栈 id 列表（techStackIds 或 tech_stack_ids），
- * 用于同步项目与技术栈的多对多关联关系。
  *
  * @author xdzn
  */
@@ -52,6 +51,23 @@ public class ProjectController {
     }
 
     /**
+     * 分页查询项目（含技术栈信息）
+     *
+     * @param current 当前页码，默认 1
+     * @param size    每页大小，默认 10
+     * @return 分页结果
+     */
+    @Operation(summary = "分页查询项目", description = "分页查询项目（含技术栈名称列表，按排序号升序）")
+    @GetMapping("/page")
+    public Result<PageResult<ProjectVO>> findAllByPage(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(projectService.findAllByPage(current, size));
+    }
+
+    /**
      * 根据 id 查询项目详情
      *
      * @param id 项目 id
@@ -70,22 +86,20 @@ public class ProjectController {
     /**
      * 创建项目
      *
-     * @param body 请求体，含项目字段与技术栈 id 列表
+     * @param dto 项目DTO
      * @return 创建后的项目视图对象
      */
     @Operation(summary = "创建项目", description = "创建项目并同步其技术栈关联，需 admin 权限")
     @PostMapping
-    public Result<ProjectVO> create(@RequestBody Map<String, Object> body) {
-        Project project = parseProject(body);
-        List<Long> techStackIds = parseTechStackIds(body);
-        return Result.ok(projectService.create(project, techStackIds));
+    public Result<ProjectVO> create(@Valid @RequestBody ProjectDto dto) {
+        return Result.ok(projectService.create(dto));
     }
 
     /**
      * 更新项目
      *
-     * @param id   项目 id
-     * @param body 请求体，含项目字段与技术栈 id 列表
+     * @param id  项目 id
+     * @param dto 项目DTO
      * @return 更新后的项目视图对象
      */
     @Operation(summary = "更新项目", description = "按 id 更新项目并同步其技术栈关联，需 admin 权限")
@@ -93,10 +107,8 @@ public class ProjectController {
     public Result<ProjectVO> update(
             @Parameter(description = "项目 id", required = true, example = "1")
             @PathVariable Long id,
-            @RequestBody Map<String, Object> body) {
-        Project project = parseProject(body);
-        List<Long> techStackIds = parseTechStackIds(body);
-        return Result.ok(projectService.update(id, project, techStackIds));
+            @Valid @RequestBody ProjectDto dto) {
+        return Result.ok(projectService.update(id, dto));
     }
 
     /**
@@ -112,41 +124,5 @@ public class ProjectController {
             @PathVariable Long id) {
         projectService.delete(id);
         return Result.ok();
-    }
-
-    /**
-     * 解析请求体中的技术栈 id 列表，统一转换为 Long 类型
-     * <p>
-     * 兼容 Jackson 将 JSON 数字解析为 Integer / Long / Double 的多种情况，
-     * 以及前端可能传入的 techStackIds / tech_stack_ids 两种字段名。
-     *
-     * @param body 请求体
-     * @return 技术栈 id 列表（元素均为 Long）
-     */
-    private List<Long> parseTechStackIds(Map<String, Object> body) {
-        List<?> rawIds = (List<?>) body.getOrDefault("techStackIds",
-                body.getOrDefault("tech_stack_ids", List.of()));
-        return rawIds.stream()
-                .map(v -> ((Number) v).longValue())
-                .toList();
-    }
-
-    /**
-     * 从请求体中解析项目字段并构造成 {@link Project}
-     * <p>
-     * 仅解析存在的字段，缺失字段保持默认值，避免前端缺字段时覆盖数据库已有数据。
-     *
-     * @param body 请求体
-     * @return 项目实体（未设置 id）
-     */
-    private Project parseProject(Map<String, Object> body) {
-        Project project = new Project();
-        if (body.containsKey("title")) project.setTitle((String) body.get("title"));
-        if (body.containsKey("description")) project.setDescription((String) body.get("description"));
-        if (body.containsKey("color")) project.setColor((String) body.get("color"));
-        if (body.containsKey("link")) project.setLink((String) body.get("link"));
-        if (body.containsKey("image")) project.setImage((String) body.get("image"));
-        if (body.containsKey("order")) project.setOrder(((Number) body.get("order")).intValue());
-        return project;
     }
 }

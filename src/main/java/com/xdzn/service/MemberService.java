@@ -1,6 +1,9 @@
 package com.xdzn.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xdzn.model.dto.MemberDto;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.Member;
 
 import java.util.List;
@@ -22,6 +25,15 @@ public interface MemberService extends IService<Member> {
     List<Member> findAll();
 
     /**
+     * 分页查询成员（按排序号升序）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @return 分页结果
+     */
+    PageResult<Member> findAllByPage(long current, long size);
+
+    /**
      * 根据 id 查询成员
      *
      * @param id 成员 id
@@ -32,19 +44,19 @@ public interface MemberService extends IService<Member> {
     /**
      * 创建成员
      *
-     * @param member 成员信息
+     * @param dto 成员DTO
      * @return 创建后的成员
      */
-    Member create(Member member);
+    Member create(MemberDto dto);
 
     /**
      * 更新成员
      *
-     * @param id     成员 id
-     * @param member 成员信息
+     * @param id  成员 id
+     * @param dto 成员DTO
      * @return 更新后的成员
      */
-    Member update(Long id, Member member);
+    Member update(Long id, MemberDto dto);
 
     /**
      * 删除成员

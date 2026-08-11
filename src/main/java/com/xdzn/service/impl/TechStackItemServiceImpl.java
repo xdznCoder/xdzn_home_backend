@@ -1,12 +1,18 @@
 package com.xdzn.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xdzn.mapper.TechStackItemMapper;
+import com.xdzn.model.dto.PageResult;
+import com.xdzn.model.dto.TechStackDto;
 import com.xdzn.model.entity.TechStackItem;
 import com.xdzn.service.TechStackItemService;
+import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -35,6 +41,20 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
     }
 
     /**
+     * 分页查询技术栈条目（按排序号升序）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @return 分页结果
+     */
+    @Override
+    public PageResult<TechStackItem> findAllByPage(long current, long size) {
+        Page<TechStackItem> page = new Page<>(current, size);
+        Page<TechStackItem> result = page(page, new LambdaQueryWrapper<TechStackItem>().orderByAsc(TechStackItem::getOrder));
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), result.getRecords());
+    }
+
+    /**
      * 根据 id 查询技术栈条目
      *
      * @param id 技术栈条目 id
@@ -47,13 +67,30 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
 
     /**
      * 创建技术栈条目，并失效技术栈列表缓存
+     * <p>
+     * 如果已存在相同名称的技术栈，则更新该条目而不是创建新的。
      *
-     * @param item 技术栈条目信息
-     * @return 创建后的技术栈条目
+     * @param dto 技术栈DTO
+     * @return 创建或更新后的技术栈条目
      */
     @Override
     @CacheEvict(value = "techStack", key = "'all'")
-    public TechStackItem create(TechStackItem item) {
+    public TechStackItem create(TechStackDto dto) {
+        // 检查是否已存在相同名称的技术栈
+        TechStackItem existing = lambdaQuery()
+                .eq(TechStackItem::getName, dto.getName())
+                .one();
+        
+        if (existing != null) {
+            // 如果已存在，则更新现有条目
+            BeanUtils.copyProperties(dto, existing);
+            updateById(existing);
+            return existing;
+        }
+        
+        // 不存在则创建新条目
+        TechStackItem item = new TechStackItem();
+        BeanUtils.copyProperties(dto, item);
         save(item);
         return item;
     }
@@ -62,13 +99,15 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      * 更新技术栈条目，并失效技术栈列表缓存
      *
      * @param id   技术栈条目 id
-     * @param item 技术栈条目信息
+     * @param dto  技术栈DTO
      * @return 更新后的技术栈条目
      */
     @Override
     @CacheEvict(value = "techStack", key = "'all'")
-    public TechStackItem update(Long id, TechStackItem item) {
+    public TechStackItem update(Long id, TechStackDto dto) {
+        TechStackItem item = new TechStackItem();
         item.setId(id);
+        BeanUtils.copyProperties(dto, item);
         updateById(item);
         return getById(id);
     }

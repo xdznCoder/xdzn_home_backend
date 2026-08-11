@@ -1,11 +1,14 @@
 package com.xdzn.controller;
 
 import com.xdzn.common.Result;
+import com.xdzn.model.dto.PageResult;
+import com.xdzn.model.dto.TimelineDto;
 import com.xdzn.model.entity.TimelineEvent;
 import com.xdzn.service.TimelineEventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +51,23 @@ public class TimelineController {
     }
 
     /**
+     * 分页查询时间线事件
+     *
+     * @param current 当前页码，默认 1
+     * @param size    每页大小，默认 10
+     * @return 分页结果
+     */
+    @Operation(summary = "分页查询时间线", description = "分页查询团队历程事件（按排序号升序）")
+    @GetMapping("/page")
+    public Result<PageResult<TimelineEvent>> findAllByPage(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") long size) {
+        return Result.ok(timelineService.findAllByPage(current, size));
+    }
+
+    /**
      * 根据 id 查询时间线事件详情
      *
      * @param id 事件 id
@@ -66,20 +86,20 @@ public class TimelineController {
     /**
      * 创建时间线事件
      *
-     * @param event 事件信息
+     * @param dto 时间线DTO
      * @return 创建后的事件
      */
     @Operation(summary = "创建时间线事件", description = "新增团队历程事件，需 admin 权限")
     @PostMapping
-    public Result<TimelineEvent> create(@RequestBody TimelineEvent event) {
-        return Result.ok(timelineService.create(event));
+    public Result<TimelineEvent> create(@Valid @RequestBody TimelineDto dto) {
+        return Result.ok(timelineService.create(dto));
     }
 
     /**
      * 更新时间线事件
      *
-     * @param id    事件 id
-     * @param event 事件信息
+     * @param id  事件 id
+     * @param dto 时间线DTO
      * @return 更新后的事件
      */
     @Operation(summary = "更新时间线事件", description = "按 id 更新时间线事件，需 admin 权限")
@@ -87,8 +107,8 @@ public class TimelineController {
     public Result<TimelineEvent> update(
             @Parameter(description = "事件 id", required = true, example = "1")
             @PathVariable Long id,
-            @RequestBody TimelineEvent event) {
-        return Result.ok(timelineService.update(id, event));
+            @Valid @RequestBody TimelineDto dto) {
+        return Result.ok(timelineService.update(id, dto));
     }
 
     /**
