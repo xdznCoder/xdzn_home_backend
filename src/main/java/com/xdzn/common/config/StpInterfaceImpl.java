@@ -5,15 +5,16 @@ import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.entity.User;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * StpInterfaceImpl
  * <p>
- * Sa-Token 角色/权限加载接口实现类。
- * 在 Sa-Token 鉴权时,系统会自动调用本类的方法来获取登录用户的角色信息。
+ * Sa-Token 权限数据源实现：向 Sa-Token 提供账号的角色 / 权限列表。
+ * <p>
+ * Sa-Token 的 {@code checkRole} / {@code checkPermission} 通过本接口查询数据
+ * （而非读取登录时写入会话的属性）。本项目角色存储在 users 表 {@code role} 字段，
+ * 登录后由 Sa-Token 每次鉴权时经 {@link #getRoleList} 查询。
  *
  * @author xdzn
  */
@@ -21,12 +22,12 @@ import java.util.List;
 public class StpInterfaceImpl implements StpInterface {
 
     /**
-     * 用户表 Mapper
+     * 用户表 Mapper，用于按登录 id 查询角色
      */
     private final UserMapper userMapper;
 
     /**
-     * 构造注入 UserMapper
+     * 构造注入依赖
      *
      * @param userMapper 用户表 Mapper
      */
@@ -35,35 +36,34 @@ public class StpInterfaceImpl implements StpInterface {
     }
 
     /**
-     * 获取登录用户的角色列表
+     * 返回账号拥有的权限码列表
      * <p>
-     * 根据登录ID查询数据库,返回用户的role字段(如"admin"/"member")。
+     * 本项目暂无权限码体系（仅角色校验），返回空列表。
      *
-     * @param loginId   登录ID(即用户ID)
-     * @param loginType 登录类型
-     * @return 角色列表
-     */
-    @Override
-    public List<String> getRoleList(Object loginId, String loginType) {
-        Long userId = Long.parseLong(loginId.toString());
-        User user = userMapper.selectById(userId);
-        if (user != null && user.getRole() != null) {
-            return Collections.singletonList(user.getRole());
-        }
-        return new ArrayList<>();
-    }
-
-    /**
-     * 获取登录用户的权限列表
-     * <p>
-     * 本项目暂不使用细粒度权限控制,返回空列表。
-     *
-     * @param loginId   登录ID(即用户ID)
-     * @param loginType 登录类型
-     * @return 权限列表(空)
+     * @param loginId   登录 id
+     * @param loginType 登录类型（默认 "login"）
+     * @return 权限码列表
      */
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
-        return new ArrayList<>();
+        return List.of();
+    }
+
+    /**
+     * 返回账号拥有的角色列表（来自 users 表 role 字段）
+     *
+     * @param loginId   登录 id（统一为 String 形式的用户主键）
+     * @param loginType 登录类型
+     * @return 角色列表，如 ["admin"]、["member"]
+     */
+    @Override
+    public List<String> getRoleList(Object loginId, String loginType) {
+        // loginId 统一为 String，转 Long 后查询用户表
+        Long userId = Long.valueOf(String.valueOf(loginId));
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return List.of();
+        }
+        return List.of(user.getRole());
     }
 }

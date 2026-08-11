@@ -1,7 +1,9 @@
 package com.xdzn.common.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -39,10 +41,11 @@ import java.time.Duration;
 public class RedisConfig {
 
     /**
-     * 声明自定义 ObjectMapper
+     * 声明自定义 ObjectMapper，供 Redis 值序列化使用
      * <p>
      * 注册 JavaTimeModule 以支持 Java 8 日期时间类型（LocalDateTime 等），
-     * 将日期序列化为字符串而非时间戳。
+     * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
+     * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
      *
      * @return ObjectMapper 实例
      */
@@ -51,6 +54,9 @@ public class RedisConfig {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // 保留类型信息，保证反序列化时还原具体类型
+        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         return mapper;
     }
 
@@ -107,7 +113,7 @@ public class RedisConfig {
     public CacheManager cacheManager(RedisConnectionFactory factory) {
         GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper());
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        
+
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair

@@ -41,6 +41,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
             SaRouter.match("/api/auth/me")
                     .check(r -> StpUtil.checkLogin());
 
+            // 成员 Excel 导出 / 模板下载（GET）需要 admin 角色（导入为 POST，由下方写操作规则覆盖）
+            SaRouter.match("/api/members/export", "/api/members/import/template")
+                    .check(r -> StpUtil.checkLogin())
+                    .check(r -> StpUtil.checkRole("admin"));
+
             // CMS 写接口需要登录 + admin 角色
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")

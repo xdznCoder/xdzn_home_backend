@@ -153,7 +153,9 @@ public class AuthServiceImpl implements AuthService {
      * @return 认证会话
      */
     private AuthSession createSession(User user) {
-        StpUtil.login(user.getId());
+        // 统一使用 String 类型 loginId（Sa-Token JWT 模式内部即为 String，避免 Long/String 混用）
+        StpUtil.login(user.getId().toString());
+        // 角色由 StpInterfaceImpl 提供（鉴权时查 users 表），登录时无需写入会话
         return AuthSession.builder()
                 .accessToken(StpUtil.getTokenValue())
                 .user(AuthUser.from(user))
