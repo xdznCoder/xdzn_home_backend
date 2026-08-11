@@ -154,6 +154,7 @@ public class AuthServiceImpl implements AuthService {
      */
     private AuthSession createSession(User user) {
         StpUtil.login(user.getId());
+        // 角色由 StpInterfaceImpl 提供（鉴权时查 users 表），登录时无需写入会话
         return AuthSession.builder()
                 .accessToken(StpUtil.getTokenValue())
                 .user(AuthUser.from(user))
