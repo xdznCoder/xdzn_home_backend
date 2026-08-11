@@ -52,13 +52,13 @@ public class StpInterfaceImpl implements StpInterface {
     /**
      * 返回账号拥有的角色列表（来自 users 表 role 字段）
      *
-     * @param loginId   登录 id（用户主键 Long）
+     * @param loginId   登录 id（统一为 String 形式的用户主键）
      * @param loginType 登录类型
      * @return 角色列表，如 ["admin"]、["member"]
      */
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
-        // JWT 模式下 loginId 可能以 String 形式传入，统一转 Long 后查询
+        // loginId 统一为 String，转 Long 后查询用户表
         Long userId = Long.valueOf(String.valueOf(loginId));
         User user = userMapper.selectById(userId);
         if (user == null) {
