@@ -1,6 +1,7 @@
 package com.xdzn.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -41,8 +42,9 @@ public class TimelineEvent {
     private String description;
 
     /**
-     * 展示排序号（升序排列，值越小越靠前）
+     * 展示排序号（升序排列，值越小越靠前）；order 为 MySQL 保留字，需反引号转义
      */
+    @TableField("`order`")
     private Integer order;
 
     /**
