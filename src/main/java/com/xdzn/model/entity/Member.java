@@ -57,6 +57,31 @@ public class Member {
     private String currentRole;
 
     /**
+     * 关联用户ID
+     */
+    private Long userId;
+
+    /**
+     * 手机号
+     */
+    private String phone;
+
+    /**
+     * 联系邮箱
+     */
+    private String emailContact;
+
+    /**
+     * 技能标签
+     */
+    private String skills;
+
+    /**
+     * 个人简介
+     */
+    private String bio;
+
+    /**
      * 展示排序号（升序排列，值越小越靠前）
      */
     @TableField(value = "`order`")

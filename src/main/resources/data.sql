@@ -66,6 +66,9 @@ INSERT IGNORE INTO members (id, name, direction, graduation_year, current_compan
 (7, '王澈', '后端', 2024, '美团', 'Go 工程师', 7),
 (8, '赵麟', '算法', 2025, '', '', 8);
 
+-- 为admin用户关联member记录(用于测试/me接口)
+UPDATE members SET user_id = 1 WHERE id = 1;
+
 -- testimonials
 INSERT IGNORE INTO testimonials (id, name, direction, quote, graduation_year, `order`) VALUES
 (1, '林星河', '前端', '在虚动智能的日子是我大学最珍贵的回忆。这里教会我的不只是技术，还有解决问题的思维方式和一群志同道合的伙伴。', 2024, 1),
