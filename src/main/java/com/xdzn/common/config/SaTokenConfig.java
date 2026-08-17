@@ -16,7 +16,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *     <li>{@code /api/admin/**}：需登录且角色为 admin</li>
  *     <li>{@code /api/auth/me}：需登录（查询当前用户信息）</li>
  *     <li>{@code /api/**} 的 POST/PUT/PATCH/DELETE 写操作：需登录且角色为 admin
- *         （例外：{@code /api/auth/**} 认证接口与 {@code /api/joins} 提交报名对匿名开放）</li>
+ *         （例外：{@code /api/auth/**} 认证接口与 {@code /api/joins} 的报名提交 POST 对匿名开放）</li>
+ *     <li>{@code /api/joins} 的列表/改状态/删除：需 admin（报名管理操作）</li>
  * </ul>
  *
  * @author xdzn
@@ -43,6 +44,12 @@ public class SaTokenConfig implements WebMvcConfigurer {
 
             // 成员 Excel 导出 / 模板下载（GET）需要 admin 角色（导入为 POST，由下方写操作规则覆盖）
             SaRouter.match("/api/members/export", "/api/members/import/template")
+                    .check(r -> StpUtil.checkLogin())
+                    .check(r -> StpUtil.checkRole("admin"));
+
+            // 报名管理（列表/改状态/删除）需要 admin；POST 报名对匿名开放
+            SaRouter.match("/api/joins")
+                    .matchMethod("GET", "PATCH", "DELETE")
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("admin"));
 

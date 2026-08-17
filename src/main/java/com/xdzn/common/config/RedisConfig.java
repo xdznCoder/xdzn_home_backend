@@ -1,7 +1,9 @@
 package com.xdzn.common.config;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -45,8 +47,9 @@ public class RedisConfig {
      * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
      * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
      * <p>
-     * 注意：该 bean 命名与默认不同，避免被 Spring MVC 的 HttpMessageConverter 引用，
-     * 防止 HTTP 请求体也被要求携带 @class 类型信息。
+     * ⚠️ Bean 命名刻意用 {@code redisObjectMapper} 而非默认的 {@code objectMapper}，
+     * 避免覆盖 Spring Boot 自动配置的全局 ObjectMapper——否则 HTTP JSON 响应会带
+     * {@code @class} 类型包装，前端无法正常解析。
      *
      * @return ObjectMapper 实例
      */
@@ -55,6 +58,9 @@ public class RedisConfig {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        // 保留类型信息，保证 Redis 反序列化还原具体类型（GenericJackson2JsonRedisSerializer 依赖）
+        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         return mapper;
     }
 
