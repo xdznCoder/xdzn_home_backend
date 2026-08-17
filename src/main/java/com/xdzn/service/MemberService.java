@@ -64,4 +64,21 @@ public interface MemberService extends IService<Member> {
      * @param id 成员 id
      */
     void delete(Long id);
+
+    /**
+     * 根据用户ID查询成员信息
+     *
+     * @param userId 用户ID
+     * @return 成员信息
+     */
+    Member getMemberByUserId(Long userId);
+
+    /**
+     * 更新当前登录用户的成员信息
+     *
+     * @param userId 用户ID
+     * @param dto 更新数据
+     * @return 更新后的成员
+     */
+    Member updateMemberByUserId(Long userId, MemberDto dto);
 }

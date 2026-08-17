@@ -8,12 +8,15 @@ import com.xdzn.model.dto.MemberDto;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.Member;
 import com.xdzn.service.MemberService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * MemberServiceImpl
@@ -106,5 +109,39 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     @CacheEvict(value = "members", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+    }
+
+    @Override
+    public Member getMemberByUserId(Long userId) {
+        LambdaQueryWrapper<Member> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Member::getUserId, userId);
+        return getOne(wrapper);
+    }
+
+    @Override
+    @CacheEvict(value = "members", key = "'all'")
+    public Member updateMemberByUserId(Long userId, MemberDto dto) {
+        Member member = getMemberByUserId(userId);
+        if (member == null) {
+            Member newMember = new Member();
+            BeanUtils.copyProperties(dto, newMember);
+            newMember.setUserId(userId);
+            save(newMember);
+            return newMember;
+        }
+        
+        if (dto.getName() != null) member.setName(dto.getName());
+        if (dto.getAvatar() != null) member.setAvatar(dto.getAvatar());
+        if (dto.getDirection() != null) member.setDirection(dto.getDirection());
+        if (dto.getGraduationYear() != null) member.setGraduationYear(dto.getGraduationYear());
+        if (dto.getCurrentCompany() != null) member.setCurrentCompany(dto.getCurrentCompany());
+        if (dto.getCurrentRole() != null) member.setCurrentRole(dto.getCurrentRole());
+        if (dto.getPhone() != null) member.setPhone(dto.getPhone());
+        if (dto.getEmailContact() != null) member.setEmailContact(dto.getEmailContact());
+        if (dto.getSkills() != null) member.setSkills(dto.getSkills());
+        if (dto.getBio() != null) member.setBio(dto.getBio());
+        
+        updateById(member);
+        return member;
     }
 }
