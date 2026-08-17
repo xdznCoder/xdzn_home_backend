@@ -41,16 +41,18 @@ import java.time.Duration;
 public class RedisConfig {
 
     /**
-     * 声明自定义 ObjectMapper，供 Redis 值序列化使用
+     * 创建供 Redis 值序列化使用的 ObjectMapper（私有方法，不注册为全局 Bean）
      * <p>
      * 注册 JavaTimeModule 以支持 Java 8 日期时间类型（LocalDateTime 等），
      * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
      * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
+     * <p>
+     * ⚠️ 必须为私有方法：若注册为 {@code @Bean} 会覆盖 Spring Boot 自动配置的
+     * 全局 ObjectMapper，导致所有 HTTP JSON 响应带 {@code @class} 类型包装。
      *
      * @return ObjectMapper 实例
      */
-    @Bean
-    public ObjectMapper objectMapper() {
+    private ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
