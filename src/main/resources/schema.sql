@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS members (
     graduation_year   INT           NOT NULL COMMENT '毕业年份',
     current_company   VARCHAR(255)  DEFAULT NULL COMMENT '现就职公司',
     current_role      VARCHAR(255)  DEFAULT NULL COMMENT '现职位',
+    user_id           BIGINT        DEFAULT NULL COMMENT '关联用户ID',
+    phone             VARCHAR(20)   DEFAULT NULL COMMENT '手机号',
+    email_contact     VARCHAR(100)  DEFAULT NULL COMMENT '联系邮箱',
+    skills            TEXT          DEFAULT NULL COMMENT '技能标签',
+    bio               TEXT          DEFAULT NULL COMMENT '个人简介',
     `order`           INT           NOT NULL DEFAULT 0 COMMENT '排序',
     created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -105,3 +110,10 @@ CREATE TABLE IF NOT EXISTS join_submissions (
     KEY idx_status (status),
     KEY idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招新报名表';
+
+-- 9. 兼容已有数据库:如果members表缺少新字段,自动添加
+ALTER TABLE members ADD COLUMN IF NOT EXISTS user_id BIGINT DEFAULT NULL COMMENT '关联用户ID';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS phone VARCHAR(20) DEFAULT NULL COMMENT '手机号';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS email_contact VARCHAR(100) DEFAULT NULL COMMENT '联系邮箱';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS skills TEXT DEFAULT NULL COMMENT '技能标签';
+ALTER TABLE members ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT NULL COMMENT '个人简介';

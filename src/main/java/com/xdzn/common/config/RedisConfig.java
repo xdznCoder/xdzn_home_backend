@@ -1,9 +1,7 @@
 package com.xdzn.common.config;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -41,22 +39,22 @@ import java.time.Duration;
 public class RedisConfig {
 
     /**
-     * 声明自定义 ObjectMapper，供 Redis 值序列化使用
+     * 声明专供 Redis 使用的 ObjectMapper
      * <p>
      * 注册 JavaTimeModule 以支持 Java 8 日期时间类型（LocalDateTime 等），
      * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
      * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
+     * <p>
+     * 注意：该 bean 命名与默认不同，避免被 Spring MVC 的 HttpMessageConverter 引用，
+     * 防止 HTTP 请求体也被要求携带 @class 类型信息。
      *
      * @return ObjectMapper 实例
      */
     @Bean
-    public ObjectMapper objectMapper() {
+    public ObjectMapper redisObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // 保留类型信息，保证反序列化时还原具体类型
-        mapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         return mapper;
     }
 
@@ -89,7 +87,7 @@ public class RedisConfig {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(factory);
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper());
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(redisObjectMapper());
         // key 与 Hash 字段名使用字符串序列化
         template.setKeySerializer(stringSerializer);
         template.setHashKeySerializer(stringSerializer);
@@ -111,7 +109,7 @@ public class RedisConfig {
      */
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper());
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(redisObjectMapper());
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
