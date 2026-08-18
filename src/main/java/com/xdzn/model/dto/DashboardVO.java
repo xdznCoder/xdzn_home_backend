@@ -10,6 +10,10 @@ import java.util.List;
  * DashboardVO
  * <p>
  * 管理后台首页看板数据 DTO，聚合各业务表的统计数据与最近报名记录。
+ * <p>
+ * 统计维度涵盖：内容规模（成员/项目/技术栈/时间线/评价）、
+ * 报名规模与状态分布（待处理/已联系/已通过/已拒绝）、
+ * 时间维度（今日/本月报名）、注册用户数。
  *
  * @author xdzn
  */
@@ -30,11 +34,13 @@ public class DashboardVO {
     /**
      * DashboardStats
      * <p>
-     * 看板统计数据项，记录各业务表的总量与待处理数量。
+     * 看板统计数据项，按内容 / 报名 / 用户三个维度组织。
      */
     @Data
     @Builder
     public static class DashboardStats {
+
+        // ── 内容统计 ──
 
         /**
          * 团队成员总数
@@ -61,14 +67,48 @@ public class DashboardVO {
          */
         private long testimonials;
 
+        // ── 报名统计 ──
+
         /**
-         * 招新报名总数
+         * 招新报名总数（所有状态之和）
          */
         private long joinSubmissions;
 
         /**
-         * 待处理的招新报名数量
+         * 待处理报名数
          */
         private long pendingJoins;
+
+        /**
+         * 已联系报名数
+         */
+        private long contactedJoins;
+
+        /**
+         * 已通过报名数
+         */
+        private long acceptedJoins;
+
+        /**
+         * 已拒绝报名数
+         */
+        private long rejectedJoins;
+
+        /**
+         * 今日新增报名数
+         */
+        private long todayJoins;
+
+        /**
+         * 本月新增报名数
+         */
+        private long monthJoins;
+
+        // ── 用户统计 ──
+
+        /**
+         * 注册用户总数（含管理员）
+         */
+        private long users;
     }
 }
