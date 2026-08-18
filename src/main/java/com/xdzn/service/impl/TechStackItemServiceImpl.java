@@ -7,21 +7,22 @@ import com.xdzn.mapper.TechStackItemMapper;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TechStackDto;
 import com.xdzn.model.entity.TechStackItem;
+import com.xdzn.model.vo.TechStackVO;
 import com.xdzn.service.TechStackItemService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * TechStackItemServiceImpl
  * <p>
  * 技术栈服务实现，提供技术栈条目增删改查。
  * 列表查询通过 Spring Cache 缓存（缓存名 {@code techStack}，TTL 10 分钟），
- * 写操作自动失效缓存。
+ * 写操作自动失效缓存；返回统一为 {@link TechStackVO}（脱敏）。
  *
  * @author xdzn
  */
@@ -32,12 +33,14 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
     /**
      * 查询全部技术栈条目（按排序号升序），结果缓存 10 分钟
      *
-     * @return 技术栈条目列表
+     * @return 技术栈公开视图列表
      */
     @Override
     @Cacheable(value = "techStack", key = "'all'", unless = "#result == null || #result.size() == 0")
-    public List<TechStackItem> findAll() {
-        return lambdaQuery().orderByAsc(TechStackItem::getOrder).list();
+    public List<TechStackVO> findAll() {
+        return lambdaQuery().orderByAsc(TechStackItem::getOrder).list().stream()
+                .map(this::toVO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -45,71 +48,59 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      *
      * @param current 当前页码
      * @param size    每页大小
-     * @return 分页结果
+     * @return 分页结果（公开视图）
      */
     @Override
-    public PageResult<TechStackItem> findAllByPage(long current, long size) {
+    public PageResult<TechStackVO> findAllByPage(long current, long size) {
         Page<TechStackItem> page = new Page<>(current, size);
-        Page<TechStackItem> result = page(page, new LambdaQueryWrapper<TechStackItem>().orderByAsc(TechStackItem::getOrder));
-        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), result.getRecords());
+        Page<TechStackItem> result = page(page,
+                new LambdaQueryWrapper<TechStackItem>().orderByAsc(TechStackItem::getOrder));
+        List<TechStackVO> voList = result.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), voList);
     }
 
     /**
      * 根据 id 查询技术栈条目
      *
      * @param id 技术栈条目 id
-     * @return 技术栈条目；不存在时返回 null
+     * @return 公开视图；不存在时返回 null
      */
     @Override
-    public TechStackItem findById(Long id) {
-        return getById(id);
+    public TechStackVO findById(Long id) {
+        TechStackItem item = getById(id);
+        return item == null ? null : toVO(item);
     }
 
     /**
      * 创建技术栈条目，并失效技术栈列表缓存
-     * <p>
-     * 如果已存在相同名称的技术栈，则更新该条目而不是创建新的。
      *
      * @param dto 技术栈DTO
-     * @return 创建或更新后的技术栈条目
+     * @return 创建后的公开视图
      */
     @Override
     @CacheEvict(value = "techStack", key = "'all'")
-    public TechStackItem create(TechStackDto dto) {
-        // 检查是否已存在相同名称的技术栈
-        TechStackItem existing = lambdaQuery()
-                .eq(TechStackItem::getName, dto.getName())
-                .one();
-        
-        if (existing != null) {
-            // 如果已存在，则更新现有条目
-            BeanUtils.copyProperties(dto, existing);
-            updateById(existing);
-            return existing;
-        }
-        
-        // 不存在则创建新条目
+    public TechStackVO create(TechStackDto dto) {
         TechStackItem item = new TechStackItem();
         BeanUtils.copyProperties(dto, item);
         save(item);
-        return item;
+        return toVO(item);
     }
 
     /**
      * 更新技术栈条目，并失效技术栈列表缓存
      *
-     * @param id   技术栈条目 id
-     * @param dto  技术栈DTO
-     * @return 更新后的技术栈条目
+     * @param id  技术栈条目 id
+     * @param dto 技术栈DTO
+     * @return 更新后的公开视图
      */
     @Override
     @CacheEvict(value = "techStack", key = "'all'")
-    public TechStackItem update(Long id, TechStackDto dto) {
+    public TechStackVO update(Long id, TechStackDto dto) {
         TechStackItem item = new TechStackItem();
         item.setId(id);
         BeanUtils.copyProperties(dto, item);
         updateById(item);
-        return getById(id);
+        return toVO(getById(id));
     }
 
     /**
@@ -121,5 +112,19 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
     @CacheEvict(value = "techStack", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+    }
+
+    // ── 内部方法 ──────────────────────
+
+    /**
+     * 将实体转换为公开视图对象（剔除审计字段）
+     *
+     * @param item 技术栈实体
+     * @return 公开视图
+     */
+    private TechStackVO toVO(TechStackItem item) {
+        TechStackVO vo = new TechStackVO();
+        BeanUtils.copyProperties(item, vo);
+        return vo;
     }
 }

@@ -1,5 +1,7 @@
 package com.xdzn.model.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -42,10 +44,14 @@ public class TestimonialDto {
      * 毕业年份,必填
      */
     @NotNull(message = "毕业年份不能为空")
+    @Min(value = 1970, message = "毕业年份不合法")
+    @Max(value = 2100, message = "毕业年份不合法")
     private Integer graduationYear;
 
     /**
      * 展示排序号(升序排列,值越小越靠前)
      */
+    @Min(value = 0, message = "排序号不能为负数")
+    @Max(value = 9999, message = "排序号不能超过 9999")
     private Integer order;
 }
