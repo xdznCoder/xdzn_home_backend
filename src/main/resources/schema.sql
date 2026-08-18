@@ -143,3 +143,13 @@ CREATE TABLE IF NOT EXISTS task_assignees (
     PRIMARY KEY (task_id, member_id),
     KEY idx_member (member_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务-成员关联表';
+
+-- 11. files 文件表（通用文件上传服务）
+CREATE TABLE IF NOT EXISTS files (
+    id            BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    original_name VARCHAR(255)  NOT NULL COMMENT '原始文件名',
+    stored_name   VARCHAR(255)  NOT NULL COMMENT '存储文件名(UUID+扩展名)',
+    content_type  VARCHAR(128)  DEFAULT NULL COMMENT 'MIME类型',
+    size          BIGINT        NOT NULL COMMENT '文件大小(字节)',
+    created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表';
