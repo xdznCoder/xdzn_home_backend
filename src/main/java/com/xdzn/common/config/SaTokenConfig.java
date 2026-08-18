@@ -58,6 +58,10 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("admin"));
 
+            // 文件上传/下载/删除需登录
+            SaRouter.match("/api/files/**")
+                    .check(r -> StpUtil.checkLogin());
+
             // CMS 写接口需要登录 + admin 角色
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")
