@@ -57,9 +57,16 @@ mybatis-plus:
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   join-notify-email: ${JOIN_NOTIFY_EMAIL:}
-  # 图床配置（SM.MS 图床，免费；token 在 https://sm.ms 注册后获取）
+  # 图床配置（GitHub 图床 + jsDelivr CDN，免费）
   image-hosting:
-    smms-token: ${SMMS_TOKEN:}
+    # GitHub Personal Access Token（需 repo 权限）
+    github-token: ${GITHUB_TOKEN:}
+    # 存图仓库（如 xdznCoder/xdzn-images）
+    github-repo: ${GITHUB_REPO:xdznCoder/xdzn-images}
+    # 仓库内图片目录前缀
+    github-path: ${GITHUB_IMG_PATH:images}
+    # 仓库分支
+    github-branch: ${GITHUB_IMG_BRANCH:main}
 
 # 接口文档（Knife4j / SpringDoc）
 springdoc:
