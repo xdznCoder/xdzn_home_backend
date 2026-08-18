@@ -66,6 +66,16 @@ app:
   upload-dir: ${UPLOAD_DIR:./uploads}
   # 单文件大小上限（字节，默认 20MB）
   max-file-size: ${MAX_FILE_SIZE:20971520}
+  # 图床配置（GitHub 图床 + jsDelivr CDN，免费）
+  image-hosting:
+    # GitHub Personal Access Token（需 repo 权限）
+    github-token: ${GITHUB_TOKEN:}
+    # 存图仓库（如 xdznCoder/xdzn-images）
+    github-repo: ${GITHUB_REPO:xdznCoder/xdzn-images}
+    # 仓库内图片目录前缀
+    github-path: ${GITHUB_IMG_PATH:images}
+    # 仓库分支
+    github-branch: ${GITHUB_IMG_BRANCH:main}
 
 # 接口文档（Knife4j / SpringDoc）
 springdoc:
