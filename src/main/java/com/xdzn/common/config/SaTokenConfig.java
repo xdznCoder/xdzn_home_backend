@@ -53,6 +53,11 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("admin"));
 
+            // 任务管理：全部分页需 admin（我的任务/详情/状态更新仅需登录，写操作由下方规则覆盖）
+            SaRouter.match("/api/tasks/page")
+                    .check(r -> StpUtil.checkLogin())
+                    .check(r -> StpUtil.checkRole("admin"));
+
             // CMS 写接口需要登录 + admin 角色
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")

@@ -75,3 +75,11 @@ INSERT IGNORE INTO testimonials (id, name, direction, quote, graduation_year, `o
 (2, '陈墨', '后端', '社团给了我从 0 到 1 搭建系统的机会，比课堂上的项目磨练更多。', 2023, 2),
 (3, '苏晚', '算法', '在这里认识了一群真正热爱技术的人，一起打比赛、做项目，是最有收获的时光。', 2024, 3),
 (4, '周然', '运维', '从踩坑部署到自动化运维，虚动智能让我真正理解了什么是「工程化」。', 2023, 4);
+
+-- tasks
+INSERT IGNORE INTO tasks (id, title, description, creator_id, start_date, due_date, status, priority) VALUES
+(1, '完成官网招新页面优化', '优化招新报名页面的移动端适配', 1, '2026-08-01 09:00:00', '2026-08-20 18:00:00', 'in_progress', 'high');
+
+-- task_assignees
+INSERT IGNORE INTO task_assignees (task_id, member_id) VALUES
+(1, 1), (1, 2);
