@@ -111,9 +111,35 @@ CREATE TABLE IF NOT EXISTS join_submissions (
     KEY idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='招新报名表';
 
--- 9. 兼容已有数据库:如果members表缺少新字段,自动添加
+-- 兼容已有数据库:如果members表缺少新字段,自动添加
 ALTER TABLE members ADD COLUMN IF NOT EXISTS user_id BIGINT DEFAULT NULL COMMENT '关联用户ID';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS phone VARCHAR(20) DEFAULT NULL COMMENT '手机号';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS email_contact VARCHAR(100) DEFAULT NULL COMMENT '联系邮箱';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS skills TEXT DEFAULT NULL COMMENT '技能标签';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT NULL COMMENT '个人简介';
+
+-- 9. tasks 任务表
+CREATE TABLE IF NOT EXISTS tasks (
+    id          BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    title       VARCHAR(255)  NOT NULL COMMENT '任务标题',
+    description TEXT          DEFAULT NULL COMMENT '任务描述',
+    attachment  VARCHAR(512)  DEFAULT NULL COMMENT '附件URL(预留文件上传)',
+    creator_id  BIGINT        NOT NULL COMMENT '创建人ID(关联users)',
+    start_date  DATETIME      DEFAULT NULL COMMENT '起始时间',
+    due_date    DATETIME      DEFAULT NULL COMMENT '截止时间',
+    status      VARCHAR(32)   NOT NULL DEFAULT 'todo' COMMENT '状态: todo/in_progress/done',
+    priority    VARCHAR(16)   NOT NULL DEFAULT 'medium' COMMENT '优先级: high/medium/low',
+    created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_creator (creator_id),
+    KEY idx_status (status),
+    KEY idx_due_date (due_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务表';
+
+-- 10. task_assignees 任务-成员关联表
+CREATE TABLE IF NOT EXISTS task_assignees (
+    task_id     BIGINT  NOT NULL COMMENT '任务ID',
+    member_id   BIGINT  NOT NULL COMMENT '成员ID',
+    PRIMARY KEY (task_id, member_id),
+    KEY idx_member (member_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='任务-成员关联表';
