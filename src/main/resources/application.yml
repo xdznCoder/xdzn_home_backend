@@ -57,6 +57,9 @@ mybatis-plus:
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
   join-notify-email: ${JOIN_NOTIFY_EMAIL:}
+  # 图床配置（SM.MS 图床，免费；token 在 https://sm.ms 注册后获取）
+  image-hosting:
+    smms-token: ${SMMS_TOKEN:}
 
 # 接口文档（Knife4j / SpringDoc）
 springdoc:
