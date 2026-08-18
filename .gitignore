@@ -34,3 +34,6 @@ build/
 
 # 前端仓库（独立 git 仓库，勿误加为子模块）
 xdzn-home/
+
+# 环境变量（含密钥，不入库；模板 .env.example 保留）
+.env

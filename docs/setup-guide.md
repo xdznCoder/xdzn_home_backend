@@ -45,25 +45,38 @@ mysql -u root -p xdzn < src/main/resources/data.sql     # 种子数据
 
 ---
 
-## 四、配置环境变量
+## 四、配置环境变量（.env 文件，生产级）
 
-项目默认配置在 `src/main/resources/application.yml`，敏感信息全部走环境变量（有默认值兜底）：
+项目已接入 **Spring Dotenv**：启动时自动读取项目根目录 **`.env`** 文件并注入环境变量，密钥不入库。
+
+**首次配置**（每个成员都要做一次）——复制模板并填写真实值：
+
+```bash
+# Windows
+copy .env.example .env
+# macOS / Linux
+cp .env.example .env
+```
+
+然后用编辑器打开 `.env`，按注释填写各项真实值（数据库密码、JWT 密钥、GitHub 图床 token 等）。
+
+**配置项说明**：
 
 | 环境变量 | 默认值 | 说明 |
 |---|---|---|
-| `DB_USER` | `root` | MySQL 用户名 |
-| `DB_PASSWORD` | 空 | MySQL 密码（**本机有密码时必须设置**） |
+| `DB_USER` / `DB_PASSWORD` | `root` / 空 | MySQL 账号密码（**本机有密码时必须设置**） |
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` | `localhost` / `6379` / 空 | Redis 连接 |
-| `JWT_SECRET` | `dev-secret-change-in-production` | Sa-Token JWT 密钥（生产必须更换） |
+| `JWT_SECRET` | `dev-secret-change-in-production` | Sa-Token JWT 密钥（**生产必须更换**） |
 | `FRONTEND_URL` | `http://localhost:3000` | 允许跨域的前端地址 |
-| `JOIN_NOTIFY_EMAIL` | 空 | 招新报名通知邮箱（邮件模块上线后使用） |
+| `JOIN_NOTIFY_EMAIL` | 空 | 招新报名通知邮箱 |
+| `GITHUB_TOKEN` | 空 | GitHub 图床 token（`repo` 权限，https://github.com/settings/tokens 创建） |
+| `GITHUB_REPO` | `xdznCoder/xdzn-images` | 存图仓库 |
+| `GITHUB_IMG_PATH` / `GITHUB_IMG_BRANCH` | `images` / `main` | 图床目录 / 分支 |
+| `UPLOAD_DIR` | `./uploads` | 文件上传目录 |
+| `MAX_FILE_SIZE` | `20971520` | 单文件大小上限（字节） |
 
-**IDEA 运行配置**（推荐方式）：
-Run/Debug Configurations → 选中 `XdznHomeBackendApplication` → Environment variables 填入：
-
-```
-DB_PASSWORD=你的密码;JWT_SECRET=你的自定义密钥
-```
+> **安全**：`.env` 已加入 `.gitignore` 不会提交；模板 `.env.example` 可提交供团队参考。
+> 若用 IDEA 启动，`Run/Debug Configurations` 无需再手动配环境变量（Spring Dotenv 自动读取 `.env`）。
 
 ---
 
