@@ -47,14 +47,14 @@ public class RedisConfig {
      * 将日期序列化为字符串而非时间戳；并开启默认类型信息（default typing），
      * 保证 {@link GenericJackson2JsonRedisSerializer} 反序列化时能还原具体类型。
      * <p>
-     * ⚠️ Bean 命名刻意用 {@code redisObjectMapper} 而非默认的 {@code objectMapper}，
-     * 避免覆盖 Spring Boot 自动配置的全局 ObjectMapper——否则 HTTP JSON 响应会带
-     * {@code @class} 类型包装，前端无法正常解析。
+     * ⚠️ 必须为私有方法：Spring Boot 的 ObjectMapper 自动配置按「类型」判断
+     * {@code @ConditionalOnMissingBean(ObjectMapper.class)}，任何 {@code @Bean ObjectMapper}
+     * 都会覆盖全局序列化器，导致所有 HTTP JSON 响应带 {@code @class} 类型包装。
+     * 仅 Redis 序列化器调用本方法即可。
      *
      * @return ObjectMapper 实例
      */
-    @Bean
-    public ObjectMapper redisObjectMapper() {
+    private ObjectMapper redisObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);

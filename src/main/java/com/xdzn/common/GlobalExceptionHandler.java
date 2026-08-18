@@ -1,5 +1,7 @@
 package com.xdzn.common;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +40,21 @@ public class GlobalExceptionHandler {
     public Result<Void> handleValidation(MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getFieldErrors().stream()
                 .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+        return Result.badRequest(msg);
+    }
+
+    /**
+     * 处理方法参数校验异常（@RequestParam/@PathVariable 上的 @Min/@Max 等）
+     *
+     * @param ex 参数约束异常
+     * @return 400 错误响应
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleConstraintViolation(ConstraintViolationException ex) {
+        String msg = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining("; "));
         return Result.badRequest(msg);
     }

@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,7 @@ import java.util.List;
  *
  * @author xdzn
  */
+@Validated
 @Tag(name = "项目接口", description = "官网项目展示与管理的增删改查（写操作需 admin 权限）")
 @RestController
 @RequestMapping("/api/projects")
@@ -61,9 +65,10 @@ public class ProjectController {
     @GetMapping("/page")
     public Result<PageResult<ProjectVO>> findAllByPage(
             @Parameter(description = "当前页码", example = "1")
-            @RequestParam(defaultValue = "1") long current,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于 1") long current,
             @Parameter(description = "每页大小", example = "10")
-            @RequestParam(defaultValue = "10") long size) {
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页大小不能小于 1")
+            @Max(value = 100, message = "每页大小不能超过 100") long size) {
         return Result.ok(projectService.findAllByPage(current, size));
     }
 

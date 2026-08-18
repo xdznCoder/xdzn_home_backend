@@ -7,6 +7,7 @@ import com.xdzn.mapper.TestimonialMapper;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TestimonialDto;
 import com.xdzn.model.entity.Testimonial;
+import com.xdzn.model.vo.TestimonialVO;
 import com.xdzn.service.TestimonialService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.cache.annotation.CacheEvict;
@@ -14,13 +15,14 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * TestimonialServiceImpl
  * <p>
  * 用户评价服务实现，提供评价增删改查。
  * 列表查询通过 Spring Cache 缓存（缓存名 {@code testimonials}，TTL 10 分钟），
- * 写操作自动失效缓存。
+ * 写操作自动失效缓存；返回统一为 {@link TestimonialVO}（脱敏）。
  *
  * @author xdzn
  */
@@ -31,12 +33,14 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
     /**
      * 查询全部评价（按排序号升序），结果缓存 10 分钟
      *
-     * @return 评价列表
+     * @return 评价公开视图列表
      */
     @Override
     @Cacheable(value = "testimonials", key = "'all'", unless = "#result == null || #result.size() == 0")
-    public List<Testimonial> findAll() {
-        return lambdaQuery().orderByAsc(Testimonial::getOrder).list();
+    public List<TestimonialVO> findAll() {
+        return lambdaQuery().orderByAsc(Testimonial::getOrder).list().stream()
+                .map(this::toVO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -44,39 +48,42 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      *
      * @param current 当前页码
      * @param size    每页大小
-     * @return 分页结果
+     * @return 分页结果（公开视图）
      */
     @Override
-    public PageResult<Testimonial> findAllByPage(long current, long size) {
+    public PageResult<TestimonialVO> findAllByPage(long current, long size) {
         Page<Testimonial> page = new Page<>(current, size);
-        Page<Testimonial> result = page(page, new LambdaQueryWrapper<Testimonial>().orderByAsc(Testimonial::getOrder));
-        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), result.getRecords());
+        Page<Testimonial> result = page(page,
+                new LambdaQueryWrapper<Testimonial>().orderByAsc(Testimonial::getOrder));
+        List<TestimonialVO> voList = result.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), voList);
     }
 
     /**
      * 根据 id 查询评价
      *
      * @param id 评价 id
-     * @return 评价信息；不存在时返回 null
+     * @return 公开视图；不存在时返回 null
      */
     @Override
-    public Testimonial findById(Long id) {
-        return getById(id);
+    public TestimonialVO findById(Long id) {
+        Testimonial testimonial = getById(id);
+        return testimonial == null ? null : toVO(testimonial);
     }
 
     /**
      * 创建评价，并失效评价列表缓存
      *
      * @param dto 评价DTO
-     * @return 创建后的评价
+     * @return 创建后的公开视图
      */
     @Override
     @CacheEvict(value = "testimonials", key = "'all'")
-    public Testimonial create(TestimonialDto dto) {
+    public TestimonialVO create(TestimonialDto dto) {
         Testimonial testimonial = new Testimonial();
         BeanUtils.copyProperties(dto, testimonial);
         save(testimonial);
-        return testimonial;
+        return toVO(testimonial);
     }
 
     /**
@@ -84,16 +91,16 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      *
      * @param id  评价 id
      * @param dto 评价DTO
-     * @return 更新后的评价
+     * @return 更新后的公开视图
      */
     @Override
     @CacheEvict(value = "testimonials", key = "'all'")
-    public Testimonial update(Long id, TestimonialDto dto) {
+    public TestimonialVO update(Long id, TestimonialDto dto) {
         Testimonial testimonial = new Testimonial();
         testimonial.setId(id);
         BeanUtils.copyProperties(dto, testimonial);
         updateById(testimonial);
-        return getById(id);
+        return toVO(getById(id));
     }
 
     /**
@@ -105,5 +112,19 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
     @CacheEvict(value = "testimonials", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+    }
+
+    // ── 内部方法 ──────────────────────
+
+    /**
+     * 将实体转换为公开视图对象（剔除审计字段）
+     *
+     * @param testimonial 评价实体
+     * @return 公开视图
+     */
+    private TestimonialVO toVO(Testimonial testimonial) {
+        TestimonialVO vo = new TestimonialVO();
+        BeanUtils.copyProperties(testimonial, vo);
+        return vo;
     }
 }
