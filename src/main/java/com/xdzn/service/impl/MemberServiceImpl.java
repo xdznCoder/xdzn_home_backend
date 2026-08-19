@@ -3,11 +3,17 @@ package com.xdzn.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xdzn.common.BusinessException;
 import com.xdzn.mapper.MemberMapper;
+import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.dto.MemberDto;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.Member;
+import com.xdzn.model.entity.User;
 import com.xdzn.service.MemberService;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +36,26 @@ import java.util.Objects;
 @Service
 public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         implements MemberService {
+
+    /**
+     * 用户表 Mapper（创建成员登录账号用）
+     */
+    private final UserMapper userMapper;
+
+    /**
+     * 密码加密器（创建登录账号时用 BCrypt 加密密码）
+     */
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    /**
+     * 构造注入依赖（baseMapper 由 MyBatis-Plus 自动注入）
+     *
+     * @param userMapper 用户表 Mapper
+     */
+    public MemberServiceImpl(UserMapper userMapper) {
+        this.userMapper = userMapper;
+        this.passwordEncoder = new BCryptPasswordEncoder();
+    }
 
     /**
      * 查询全部成员（按排序号升序），结果缓存 10 分钟
@@ -75,10 +101,17 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      * @return 创建后的成员
      */
     @Override
+    @Transactional
     @CacheEvict(value = "members", key = "'all'")
     public Member create(MemberDto dto) {
         Member member = new Member();
         BeanUtils.copyProperties(dto, member);
+
+        // 可选：同时为成员创建登录账号（role=member），并将 users.id 关联到 member.user_id
+        if (Boolean.TRUE.equals(dto.getCreateAccount())) {
+            createAccountForMember(dto, member);
+        }
+
         save(member);
         return member;
     }
@@ -143,5 +176,31 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         
         updateById(member);
         return member;
+    }
+
+    /**
+     * 为成员创建登录账号：邮箱查重 → 建 users（role=member，密码 BCrypt 加密）→ 关联 member.user_id
+     *
+     * @param dto    成员 DTO（含 accountEmail/accountPassword/createAccount）
+     * @param member 待保存的成员实体（会设置 userId）
+     */
+    private void createAccountForMember(MemberDto dto, Member member) {
+        if (dto.getAccountEmail() == null || dto.getAccountEmail().isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "创建登录账号需填写邮箱");
+        }
+        if (dto.getAccountPassword() == null || dto.getAccountPassword().isBlank()) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "创建登录账号需填写密码");
+        }
+        Long exist = userMapper.selectCount(new LambdaQueryWrapper<User>().eq(User::getEmail, dto.getAccountEmail()));
+        if (exist != null && exist > 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "该邮箱已被注册");
+        }
+        User user = new User();
+        user.setEmail(dto.getAccountEmail());
+        user.setPassword(passwordEncoder.encode(dto.getAccountPassword()));
+        user.setName(dto.getName());
+        user.setRole("member");
+        userMapper.insert(user);
+        member.setUserId(user.getId());
     }
 }

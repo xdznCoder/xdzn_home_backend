@@ -1,7 +1,9 @@
 package com.xdzn.model.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
@@ -77,4 +79,22 @@ public class MemberDto {
      * 展示排序号(升序排列,值越小越靠前)
      */
     private Integer order;
+
+    /**
+     * 是否同时创建登录账号（仅新增成员时生效；为 true 时 accountEmail/accountPassword 必填）
+     */
+    private Boolean createAccount;
+
+    /**
+     * 登录账号邮箱（创建账号时必填，将写入 users 表并关联成员）
+     */
+    @Email(message = "邮箱格式不正确")
+    @Size(max = 255, message = "邮箱过长")
+    private String accountEmail;
+
+    /**
+     * 登录账号密码（创建账号时必填，BCrypt 加密存储）
+     */
+    @Size(min = 6, max = 64, message = "密码长度需在 6-64 位")
+    private String accountPassword;
 }
