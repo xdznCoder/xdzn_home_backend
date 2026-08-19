@@ -1,8 +1,10 @@
 package com.xdzn.model.dto;
 
 import com.xdzn.model.entity.JoinSubmission;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,6 +22,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DashboardVO {
 
     /**
@@ -39,6 +43,8 @@ public class DashboardVO {
      */
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class DashboardStats {
 
         // ── 内容统计 ──
