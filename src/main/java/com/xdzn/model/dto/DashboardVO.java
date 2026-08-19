@@ -4,6 +4,7 @@ import com.xdzn.model.entity.JoinSubmission;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -110,5 +111,12 @@ public class DashboardVO {
          * 注册用户总数（含管理员）
          */
         private long users;
+
+        // ── 经费统计 ──
+
+        /**
+         * 经费余额（income - expense 实时聚合）
+         */
+        private BigDecimal fundBalance;
     }
 }
