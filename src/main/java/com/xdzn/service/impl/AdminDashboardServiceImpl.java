@@ -2,6 +2,7 @@ package com.xdzn.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.xdzn.mapper.FinanceRecordMapper;
 import com.xdzn.mapper.JoinSubmissionMapper;
 import com.xdzn.mapper.MemberMapper;
 import com.xdzn.mapper.ProjectMapper;
@@ -10,11 +11,13 @@ import com.xdzn.mapper.TestimonialMapper;
 import com.xdzn.mapper.TimelineEventMapper;
 import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.dto.DashboardVO;
+import com.xdzn.model.entity.FinanceRecord;
 import com.xdzn.model.entity.JoinSubmission;
 import com.xdzn.service.AdminDashboardService;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -81,6 +84,11 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final UserMapper userMapper;
 
     /**
+     * 经费收支表 Mapper
+     */
+    private final FinanceRecordMapper financeMapper;
+
+    /**
      * 构造注入全部业务表 Mapper
      *
      * @param memberMapper      成员表 Mapper
@@ -97,7 +105,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                                      TimelineEventMapper timelineMapper,
                                      TestimonialMapper testimonialMapper,
                                      JoinSubmissionMapper joinMapper,
-                                     UserMapper userMapper) {
+                                     UserMapper userMapper,
+                                     FinanceRecordMapper financeMapper) {
         this.memberMapper = memberMapper;
         this.projectMapper = projectMapper;
         this.techStackMapper = techStackMapper;
@@ -105,6 +114,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         this.testimonialMapper = testimonialMapper;
         this.joinMapper = joinMapper;
         this.userMapper = userMapper;
+        this.financeMapper = financeMapper;
     }
 
     /**
@@ -157,6 +167,26 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                         .orderByDesc(JoinSubmission::getCreatedAt)
                         .last("LIMIT 5"));
 
+        // ── 经费统计：一次 GROUP BY type 聚合出进账/支出，余额 = 进账 - 支出 ──
+        BigDecimal fundBalance = BigDecimal.ZERO;
+        List<Map<String, Object>> fundRows = financeMapper.selectMaps(
+                new QueryWrapper<FinanceRecord>()
+                        .select("type", "COALESCE(SUM(amount), 0) AS total")
+                        .groupBy("type"));
+        for (Map<String, Object> row : fundRows) {
+            Object type = row.get("type");
+            Object total = row.get("total");
+            if (type == null || total == null) {
+                continue;
+            }
+            BigDecimal amount = new BigDecimal(String.valueOf(total));
+            if ("income".equals(type)) {
+                fundBalance = fundBalance.add(amount);
+            } else if ("expense".equals(type)) {
+                fundBalance = fundBalance.subtract(amount);
+            }
+        }
+
         return DashboardVO.builder()
                 .stats(DashboardVO.DashboardStats.builder()
                         .members(members)
@@ -172,6 +202,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                         .todayJoins(todayJoins)
                         .monthJoins(monthJoins)
                         .users(users)
+                        .fundBalance(fundBalance)
                         .build())
                 .recentJoins(recentJoins)
                 .build();

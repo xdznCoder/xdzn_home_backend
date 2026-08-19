@@ -153,3 +153,18 @@ CREATE TABLE IF NOT EXISTS files (
     size          BIGINT        NOT NULL COMMENT '文件大小(字节)',
     created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表';
+
+-- 12. finance_records 经费收支表
+CREATE TABLE IF NOT EXISTS finance_records (
+    id           BIGINT         NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    type         VARCHAR(16)    NOT NULL COMMENT '收支类型: income(进账)/expense(支出)',
+    amount       DECIMAL(12,2)  NOT NULL COMMENT '金额(元,保留两位)',
+    category     VARCHAR(32)    DEFAULT NULL COMMENT '分类(如 团费/报销/赞助/物资/活动)',
+    description  VARCHAR(255)   DEFAULT NULL COMMENT '说明',
+    operator_id  BIGINT         DEFAULT NULL COMMENT '操作人ID(关联users)',
+    occurred_at  DATETIME       DEFAULT NULL COMMENT '发生时间',
+    created_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_type (type),
+    KEY idx_occurred_at (occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='经费收支表';
