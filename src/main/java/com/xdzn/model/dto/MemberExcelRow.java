@@ -50,6 +50,18 @@ public class MemberExcelRow {
     private Integer graduationYear;
 
     /**
+     * 年级
+     */
+    @ExcelProperty("年级")
+    private Integer grade;
+
+    /**
+     * 学号
+     */
+    @ExcelProperty("学号")
+    private String studentNo;
+
+    /**
      * 专业
      */
     @ExcelProperty("专业")
@@ -60,6 +72,18 @@ public class MemberExcelRow {
      */
     @ExcelProperty("团队职务")
     private String teamRole;
+
+    /**
+     * 实习经历
+     */
+    @ExcelProperty("实习经历")
+    private String internship;
+
+    /**
+     * 获奖经历
+     */
+    @ExcelProperty("获奖经历")
+    private String awards;
 
     /**
      * 展示排序号

@@ -22,8 +22,12 @@ CREATE TABLE IF NOT EXISTS members (
     avatar            VARCHAR(512)  NOT NULL DEFAULT '' COMMENT '头像URL',
     direction         VARCHAR(255)  NOT NULL COMMENT '方向（前端/后端/算法/设计/运维）',
     graduation_year   INT           NOT NULL COMMENT '毕业年份',
+    grade             INT           DEFAULT NULL COMMENT '年级（如 2023 表示 2023 级）',
+    student_no        VARCHAR(32)   DEFAULT NULL COMMENT '学号',
     major             VARCHAR(255)  DEFAULT NULL COMMENT '专业',
     team_role         VARCHAR(255)  DEFAULT NULL COMMENT '团队职务',
+    internship        TEXT          DEFAULT NULL COMMENT '实习经历',
+    awards            TEXT          DEFAULT NULL COMMENT '获奖经历',
     user_id           BIGINT        DEFAULT NULL COMMENT '关联用户ID',
     phone             VARCHAR(20)   DEFAULT NULL COMMENT '手机号',
     email_contact     VARCHAR(100)  DEFAULT NULL COMMENT '联系邮箱',
@@ -113,6 +117,10 @@ CREATE TABLE IF NOT EXISTS join_submissions (
 
 -- 兼容已有数据库:如果members表缺少新字段,自动添加
 ALTER TABLE members ADD COLUMN IF NOT EXISTS user_id BIGINT DEFAULT NULL COMMENT '关联用户ID';
+ALTER TABLE members ADD COLUMN grade INT DEFAULT NULL COMMENT '年级（如 2023 表示 2023 级）';
+ALTER TABLE members ADD COLUMN student_no VARCHAR(32) DEFAULT NULL COMMENT '学号';
+ALTER TABLE members ADD COLUMN internship TEXT DEFAULT NULL COMMENT '实习经历';
+ALTER TABLE members ADD COLUMN awards TEXT DEFAULT NULL COMMENT '获奖经历';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS phone VARCHAR(20) DEFAULT NULL COMMENT '手机号';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS email_contact VARCHAR(100) DEFAULT NULL COMMENT '联系邮箱';
 ALTER TABLE members ADD COLUMN IF NOT EXISTS skills TEXT DEFAULT NULL COMMENT '技能标签';
