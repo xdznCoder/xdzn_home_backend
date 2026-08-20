@@ -47,6 +47,16 @@ public class Member {
     private Integer graduationYear;
 
     /**
+     * 年级（如 2020 表示 2020 级）
+     */
+    private Integer grade;
+
+    /**
+     * 学号（内部信息，不在公开接口返回）
+     */
+    private String studentNo;
+
+    /**
      * 专业
      */
     private String major;
@@ -55,6 +65,16 @@ public class Member {
      * 团队职务（如 负责人/核心成员/成员）
      */
     private String teamRole;
+
+    /**
+     * 实习经历
+     */
+    private String internship;
+
+    /**
+     * 获奖经历
+     */
+    private String awards;
 
     /**
      * 关联用户ID

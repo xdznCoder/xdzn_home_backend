@@ -68,7 +68,8 @@ public class MemberExcelService {
      */
     public void exportTemplate(HttpServletResponse response) {
         List<MemberExcelRow> example = List.of(new MemberExcelRow(
-                null, "张三", "https://example.com/avatar.png", "后端", 2025, "示例公司", "示例职位", 1));
+                null, "张三", "https://example.com/avatar.png", "后端", 2025, 2021,
+                "20230101", "软件工程", "核心成员", "示例实习经历", "示例获奖经历", 1));
         excelService.export(response, example, MemberExcelRow.class, "导入模板", "成员导入模板");
     }
 
@@ -148,8 +149,12 @@ public class MemberExcelService {
         member.setAvatar(row.getAvatar());
         member.setDirection(row.getDirection());
         member.setGraduationYear(row.getGraduationYear());
+        member.setGrade(row.getGrade());
+        member.setStudentNo(row.getStudentNo());
         member.setMajor(row.getMajor());
         member.setTeamRole(row.getTeamRole());
+        member.setInternship(row.getInternship());
+        member.setAwards(row.getAwards());
         member.setOrder(row.getOrder());
     }
 
@@ -166,8 +171,12 @@ public class MemberExcelService {
                 member.getAvatar(),
                 member.getDirection(),
                 member.getGraduationYear(),
+                member.getGrade(),
+                member.getStudentNo(),
                 member.getMajor(),
                 member.getTeamRole(),
+                member.getInternship(),
+                member.getAwards(),
                 member.getOrder());
     }
 }

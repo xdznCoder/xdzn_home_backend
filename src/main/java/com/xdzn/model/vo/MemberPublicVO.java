@@ -21,10 +21,16 @@ public class MemberPublicVO {
     private String direction;
     
     private Integer graduationYear;
+
+    private Integer grade;
     
     private String major;
 
     private String teamRole;
+
+    private String internship;
+
+    private String awards;
     
     private Integer order;
 }

@@ -41,6 +41,17 @@ public class MemberDto {
     private Integer graduationYear;
 
     /**
+     * 年级（如 2020 表示 2020 级）
+     */
+    private Integer grade;
+
+    /**
+     * 学号（内部信息，不在公开接口返回）
+     */
+    @Size(max = 32, message = "学号不能超过 32 字符")
+    private String studentNo;
+
+    /**
      * 专业
      */
     private String major;
@@ -49,6 +60,18 @@ public class MemberDto {
      * 团队职务（如 负责人/核心成员/成员）
      */
     private String teamRole;
+
+    /**
+     * 实习经历
+     */
+    @Size(max = 1000, message = "实习经历过长")
+    private String internship;
+
+    /**
+     * 获奖经历
+     */
+    @Size(max = 1000, message = "获奖经历过长")
+    private String awards;
 
     /**
      * 关联用户ID
