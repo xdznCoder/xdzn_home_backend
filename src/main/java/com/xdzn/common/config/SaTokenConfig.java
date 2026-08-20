@@ -66,10 +66,18 @@ public class SaTokenConfig implements WebMvcConfigurer {
             SaRouter.match("/api/finance/page", "/api/finance/summary", "/api/finance/*")
                     .check(r -> StpUtil.checkLogin());
 
-            // CMS 写接口需要登录 + admin 角色
+            // 资源分享：读写均需登录（所有成员可上传/检索），写操作不走下方全局 captain 规则
+            SaRouter.match("/api/resources/**")
+                    .check(r -> StpUtil.checkLogin());
+
+            // 资源分类：读登录（供上传选择），写操作由下方通用规则要求 captain
+            SaRouter.match("/api/resource-categories/**")
+                    .check(r -> StpUtil.checkLogin());
+
+            // CMS 写接口需要登录 + admin 角色（资源分享写操作除外，由上方规则覆盖）
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")
-                    .notMatch("/api/auth/**", "/api/joins")
+                    .notMatch("/api/auth/**", "/api/joins", "/api/resources/**")
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("captain"));
         });
