@@ -50,16 +50,16 @@ public class MemberExcelRow {
     private Integer graduationYear;
 
     /**
-     * 当前所在公司
+     * 专业
      */
-    @ExcelProperty("当前公司")
-    private String currentCompany;
+    @ExcelProperty("专业")
+    private String major;
 
     /**
-     * 当前职位
+     * 团队职务
      */
-    @ExcelProperty("当前职位")
-    private String currentRole;
+    @ExcelProperty("团队职务")
+    private String teamRole;
 
     /**
      * 展示排序号

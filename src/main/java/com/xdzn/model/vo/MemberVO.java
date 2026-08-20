@@ -17,8 +17,8 @@ public class MemberVO {
     private String avatar;
     private String direction;
     private Integer graduationYear;
-    private String currentCompany;
-    private String currentRole;
+    private String major;
+    private String teamRole;
     private Integer order;
 
     /** 关联用户ID */

@@ -56,15 +56,15 @@ INSERT IGNORE INTO project_tech_stack (project_id, tech_stack_id) VALUES
 (6, 3);
 
 -- members
-INSERT IGNORE INTO members (id, name, direction, graduation_year, current_company, current_role, `order`) VALUES
-(1, '林星河', '前端', 2024, '字节跳动', '前端工程师', 1),
-(2, '陈墨', '后端', 2023, '腾讯', '后端工程师', 2),
-(3, '苏晚', '算法', 2024, '百度', '算法工程师', 3),
-(4, '张涵', '设计', 2025, '', '', 4),
-(5, '李遥', '前端', 2025, '', '', 5),
-(6, '周然', '运维', 2023, '阿里云', 'DevOps 工程师', 6),
-(7, '王澈', '后端', 2024, '美团', 'Go 工程师', 7),
-(8, '赵麟', '算法', 2025, '', '', 8);
+INSERT IGNORE INTO members (id, name, direction, graduation_year, major, team_role, `order`) VALUES
+(1, '林星河', '前端', 2024, '计算机科学与技术', '负责人', 1),
+(2, '陈墨', '后端', 2023, '软件工程', '核心成员', 2),
+(3, '苏晚', '算法', 2024, '数据科学与大数据技术', '核心成员', 3),
+(4, '张涵', '设计', 2025, '数字媒体技术', '成员', 4),
+(5, '李遥', '前端', 2025, '计算机科学与技术', '成员', 5),
+(6, '周然', '运维', 2023, '网络工程', '核心成员', 6),
+(7, '王澈', '后端', 2024, '软件工程', '成员', 7),
+(8, '赵麟', '算法', 2025, '计算机科学与技术', '成员', 8);
 
 -- 为admin用户关联member记录(用于测试/me接口)
 UPDATE members SET user_id = 1 WHERE id = 1;

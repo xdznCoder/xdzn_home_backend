@@ -167,8 +167,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         if (dto.getAvatar() != null) member.setAvatar(dto.getAvatar());
         if (dto.getDirection() != null) member.setDirection(dto.getDirection());
         if (dto.getGraduationYear() != null) member.setGraduationYear(dto.getGraduationYear());
-        if (dto.getCurrentCompany() != null) member.setCurrentCompany(dto.getCurrentCompany());
-        if (dto.getCurrentRole() != null) member.setCurrentRole(dto.getCurrentRole());
+        if (dto.getMajor() != null) member.setMajor(dto.getMajor());
+        if (dto.getTeamRole() != null) member.setTeamRole(dto.getTeamRole());
         if (dto.getPhone() != null) member.setPhone(dto.getPhone());
         if (dto.getEmailContact() != null) member.setEmailContact(dto.getEmailContact());
         if (dto.getSkills() != null) member.setSkills(dto.getSkills());
