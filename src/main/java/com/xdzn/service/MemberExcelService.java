@@ -148,8 +148,8 @@ public class MemberExcelService {
         member.setAvatar(row.getAvatar());
         member.setDirection(row.getDirection());
         member.setGraduationYear(row.getGraduationYear());
-        member.setCurrentCompany(row.getCurrentCompany());
-        member.setCurrentRole(row.getCurrentRole());
+        member.setMajor(row.getMajor());
+        member.setTeamRole(row.getTeamRole());
         member.setOrder(row.getOrder());
     }
 
@@ -166,8 +166,8 @@ public class MemberExcelService {
                 member.getAvatar(),
                 member.getDirection(),
                 member.getGraduationYear(),
-                member.getCurrentCompany(),
-                member.getCurrentRole(),
+                member.getMajor(),
+                member.getTeamRole(),
                 member.getOrder());
     }
 }

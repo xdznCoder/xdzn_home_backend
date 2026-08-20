@@ -22,9 +22,9 @@ public class MemberPublicVO {
     
     private Integer graduationYear;
     
-    private String currentCompany;
-    
-    private String currentRole;
+    private String major;
+
+    private String teamRole;
     
     private Integer order;
 }

@@ -41,14 +41,14 @@ public class MemberDto {
     private Integer graduationYear;
 
     /**
-     * 当前所在公司
+     * 专业
      */
-    private String currentCompany;
+    private String major;
 
     /**
-     * 当前担任职位
+     * 团队职务（如 负责人/核心成员/成员）
      */
-    private String currentRole;
+    private String teamRole;
 
     /**
      * 关联用户ID
