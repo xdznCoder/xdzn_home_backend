@@ -33,4 +33,7 @@ public class MemberPublicVO {
     private String awards;
     
     private Integer order;
+
+    /** 登录账号身份（captain 队长 / alumni 已毕业 / member 普通；无账号为 null） */
+    private String role;
 }

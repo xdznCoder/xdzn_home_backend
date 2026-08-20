@@ -183,6 +183,48 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     }
 
     /**
+     * 设置成员登录账号身份（member 普通成员 / alumni 已毕业成员）
+     * 通过该成员的 user_id 找到登录账号并更新 role。
+     *
+     * @param id   成员 id
+     * @param role 目标身份（仅允许 member/alumni，不允许设为 captain 避免越权）
+     */
+    @Override
+    public void setMemberRole(Long id, String role) {
+        if (role == null || !(role.equals("member") || role.equals("alumni"))) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "身份仅允许 member(普通成员)/alumni(已毕业成员)");
+        }
+        Member member = getById(id);
+        if (member == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "成员不存在");
+        }
+        if (member.getUserId() == null) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "该成员未关联登录账号，无法设置身份");
+        }
+        User user = userMapper.selectById(member.getUserId());
+        if (user == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "登录账号不存在");
+        }
+        user.setRole(role);
+        userMapper.updateById(user);
+    }
+
+    /**
+     * 查询用户角色（用于成员列表展示身份）
+     *
+     * @param userId 用户 id
+     * @return 角色；用户不存在或 userId 为空返回 null
+     */
+    @Override
+    public String getUserRole(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        User user = userMapper.selectById(userId);
+        return user == null ? null : user.getRole();
+    }
+
+    /**
      * 为成员创建登录账号：邮箱查重 → 建 users（role=member，密码 BCrypt 加密）→ 关联 member.user_id
      *
      * @param dto    成员 DTO（含 accountEmail/accountPassword/createAccount）

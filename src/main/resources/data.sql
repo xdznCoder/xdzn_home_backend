@@ -2,9 +2,9 @@
 -- 虚动智能官网种子数据
 -- ============================================
 
--- 管理员账号: admin@xdzn.dev / admin123 (BCrypt $2a$10)
+-- 队长账号: admin@xdzn.dev / admin123 (BCrypt $2a$10)，角色 captain（队长）
 INSERT IGNORE INTO users (id, email, password, name, role) VALUES
-(1, 'admin@xdzn.dev', '$2a$10$Mn8L5lhnpSJtgD8kBC54yupY6lLOSknfPvvI9fSI7Gdp1bScAVK2S', '管理员', 'admin');
+(1, 'admin@xdzn.dev', '$2a$10$Mn8L5lhnpSJtgD8kBC54yupY6lLOSknfPvvI9fSI7Gdp1bScAVK2S', '管理员', 'captain');
 
 -- timeline_events
 INSERT IGNORE INTO timeline_events (id, year, title, description, `order`) VALUES

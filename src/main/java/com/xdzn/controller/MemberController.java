@@ -16,6 +16,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -56,6 +57,7 @@ public class MemberController {
         List<MemberPublicVO> voList = members.stream().map(m -> {
             MemberPublicVO vo = new MemberPublicVO();
             BeanUtils.copyProperties(m, vo);
+            vo.setRole(memberService.getUserRole(m.getUserId()));
             return vo;
         }).collect(Collectors.toList());
         return Result.ok(voList);
@@ -79,6 +81,7 @@ public class MemberController {
         List<MemberPublicVO> voList = pageMember.getRecords().stream().map(m -> {
             MemberPublicVO vo = new MemberPublicVO();
             BeanUtils.copyProperties(m, vo);
+            vo.setRole(memberService.getUserRole(m.getUserId()));
             return vo;
         }).collect(Collectors.toList());
         long pages = pageMember.getTotal() / size + (pageMember.getTotal() % size == 0 ? 0 : 1);
@@ -100,6 +103,7 @@ public class MemberController {
         if (member == null) return Result.notFound();
         MemberPublicVO vo = new MemberPublicVO();
         BeanUtils.copyProperties(member, vo);
+        vo.setRole(memberService.getUserRole(member.getUserId()));
         return Result.ok(vo);
     }
 
@@ -149,6 +153,23 @@ public class MemberController {
             @Parameter(description = "成员 id", required = true, example = "1")
             @PathVariable Long id) {
         memberService.delete(id);
+        return Result.ok();
+    }
+
+    /**
+     * 设置成员登录账号身份（member 普通成员 / alumni 已毕业成员），仅 captain 可调用
+     *
+     * @param id   成员 id
+     * @param body 请求体：{ "role": "member" | "alumni" }
+     * @return 操作结果
+     */
+    @Operation(summary = "设置成员身份", description = "设置成员登录账号身份（member 普通/alumni 已毕业），需 captain 权限")
+    @PutMapping("/{id}/role")
+    public Result<Void> setMemberRole(
+            @Parameter(description = "成员 id", required = true, example = "1")
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        memberService.setMemberRole(id, body.get("role"));
         return Result.ok();
     }
 

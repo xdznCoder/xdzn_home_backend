@@ -214,8 +214,8 @@ public class TaskServiceImpl implements TaskService {
         if (status == null || !VALID_STATUS.contains(status)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "状态仅允许 todo/in_progress/done");
         }
-        // 权限：负责人（admin）或该任务被指派成员
-        if (!StpUtil.hasRole("admin")) {
+        // 权限：负责人（captain 队长）或该任务被指派成员
+        if (!StpUtil.hasRole("captain")) {
             Long myMemberId = getCurrentMemberId();
             boolean isAssignee = myMemberId != null && assigneeMapper.selectCount(
                     new LambdaQueryWrapper<TaskAssignee>()
