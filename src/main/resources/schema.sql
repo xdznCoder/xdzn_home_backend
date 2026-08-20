@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     email       VARCHAR(255)  NOT NULL COMMENT '登录邮箱',
     password    VARCHAR(255)  NOT NULL COMMENT 'BCrypt 加密密文',
     name        VARCHAR(255)  NOT NULL COMMENT '用户名',
-    role        VARCHAR(32)   NOT NULL DEFAULT 'member' COMMENT '角色: admin / member',
+    role        VARCHAR(32)   NOT NULL DEFAULT 'member' COMMENT '角色: captain(队长) / alumni(已毕业成员) / member(普通成员)',
     created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted     TINYINT       NOT NULL DEFAULT 0 COMMENT '逻辑删除',

@@ -81,4 +81,20 @@ public interface MemberService extends IService<Member> {
      * @return 更新后的成员
      */
     Member updateMemberByUserId(Long userId, MemberDto dto);
+
+    /**
+     * 设置成员登录账号身份（member 普通成员 / alumni 已毕业成员），仅 captain 可调用
+     *
+     * @param id   成员 id
+     * @param role 目标身份
+     */
+    void setMemberRole(Long id, String role);
+
+    /**
+     * 查询用户角色（用于成员列表展示身份）
+     *
+     * @param userId 用户 id
+     * @return 角色；用户不存在或 userId 为空返回 null
+     */
+    String getUserRole(Long userId);
 }
