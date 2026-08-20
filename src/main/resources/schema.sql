@@ -176,3 +176,28 @@ CREATE TABLE IF NOT EXISTS finance_records (
     KEY idx_type (type),
     KEY idx_occurred_at (occurred_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='经费收支表';
+
+-- 13. resource_categories 资源分类表
+CREATE TABLE IF NOT EXISTS resource_categories (
+    id          BIGINT       NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    name        VARCHAR(64)  NOT NULL COMMENT '分类名',
+    sort        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源分类';
+
+-- 14. resources 资源分享表
+CREATE TABLE IF NOT EXISTS resources (
+    id               BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    title            VARCHAR(255)  NOT NULL COMMENT '标题',
+    category_id      BIGINT        DEFAULT NULL COMMENT '分类ID',
+    description      TEXT          DEFAULT NULL COMMENT '描述',
+    tags             VARCHAR(255)  DEFAULT '' COMMENT '标签（逗号分隔，可多个）',
+    attachment_url   VARCHAR(512)  DEFAULT NULL COMMENT '附件URL',
+    attachment_name  VARCHAR(255)  DEFAULT NULL COMMENT '附件文件名',
+    uploader_id      BIGINT        DEFAULT NULL COMMENT '上传人ID(关联users)',
+    created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_category (category_id),
+    KEY idx_uploader (uploader_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源分享';
