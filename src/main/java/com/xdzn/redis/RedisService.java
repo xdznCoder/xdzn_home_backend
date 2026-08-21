@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -313,6 +314,108 @@ public class RedisService {
         } catch (Exception e) {
             log.error("Redis 获取列表数据失败：key={}", prefix.getPrefix() + key, e);
             return null;
+        }
+    }
+
+    // ==================== 缓存回填方法（统一处理穿透 / 击穿 / 雪崩） ====================
+
+    /**
+     * 读取缓存，未命中时通过 {@code loader} 回源并回填缓存。
+     * <p>
+     * 统一处理缓存三大问题：
+     * <ul>
+     *     <li><b>穿透</b>：{@code loader} 返回 null 时经 {@link #set} 写入空值标记，下次命中直接返回 null</li>
+     *     <li><b>击穿</b>：miss 后用 {@link #tryLock} 互斥，仅持锁线程回源，其余线程短暂等待重读缓存</li>
+     *     <li><b>雪崩</b>：回填经 {@link #set} 叠加随机 TTL 偏移</li>
+     * </ul>
+     *
+     * @param prefix 缓存键前缀
+     * @param key    缓存键
+     * @param clazz  值类型
+     * @param loader 数据加载器（未命中时回调查库）
+     * @param <T>    值类型
+     * @return 缓存值或回源值；命中空值标记返回 null
+     */
+    public <T> T getOrSet(KeyPrefix prefix, String key, Class<T> clazz, Supplier<T> loader) {
+        // 命中（含空值标记，get 对空值标记返回 null）直接返回，避免打库
+        if (Boolean.TRUE.equals(exists(prefix, key))) {
+            return get(prefix, key, clazz);
+        }
+        String lockKey = prefix.getPrefix() + key + ":lock";
+        if (Boolean.TRUE.equals(tryLock(lockKey, 30))) {
+            try {
+                // 双检：等待锁期间可能已被其他线程回填
+                if (Boolean.TRUE.equals(exists(prefix, key))) {
+                    return get(prefix, key, clazz);
+                }
+                T value = loader.get();
+                // null 也会经 set 写空值标记（防穿透）
+                set(prefix, key, value);
+                return value;
+            } finally {
+                unlock(lockKey);
+            }
+        }
+        // 未拿到锁：短暂等待重读缓存，仍无则回源（容忍极小并发）
+        for (int i = 0; i < 3; i++) {
+            sleepQuietly(50);
+            if (Boolean.TRUE.equals(exists(prefix, key))) {
+                return get(prefix, key, clazz);
+            }
+        }
+        T value = loader.get();
+        set(prefix, key, value);
+        return value;
+    }
+
+    /**
+     * 读取列表缓存，未命中时通过 {@code loader} 回源并回填（逻辑同 {@link #getOrSet}，列表版）。
+     *
+     * @param prefix 缓存键前缀
+     * @param key    缓存键
+     * @param clazz  元素类型
+     * @param loader 列表加载器
+     * @param <T>    元素类型
+     * @return 缓存列表或回源列表；命中空值标记返回空列表
+     */
+    public <T> List<T> getOrSetList(KeyPrefix prefix, String key, Class<T> clazz, Supplier<List<T>> loader) {
+        if (Boolean.TRUE.equals(exists(prefix, key))) {
+            return getList(prefix, key, clazz);
+        }
+        String lockKey = prefix.getPrefix() + key + ":lock";
+        if (Boolean.TRUE.equals(tryLock(lockKey, 30))) {
+            try {
+                if (Boolean.TRUE.equals(exists(prefix, key))) {
+                    return getList(prefix, key, clazz);
+                }
+                List<T> value = loader.get();
+                setList(prefix, key, value);
+                return value;
+            } finally {
+                unlock(lockKey);
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            sleepQuietly(50);
+            if (Boolean.TRUE.equals(exists(prefix, key))) {
+                return getList(prefix, key, clazz);
+            }
+        }
+        List<T> value = loader.get();
+        setList(prefix, key, value);
+        return value;
+    }
+
+    /**
+     * 静默休眠（中断时恢复中断标记）
+     *
+     * @param millis 休眠毫秒数
+     */
+    private void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

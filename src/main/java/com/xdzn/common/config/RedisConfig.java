@@ -5,20 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
 
 /**
  * RedisConfig
@@ -27,17 +20,14 @@ import java.time.Duration;
  * <ul>
  *     <li>声明通用 {@link RedisTemplate}（key 字符串序列化、value JSON 序列化，供 RedisService 使用）</li>
  *     <li>显式声明 {@link StringRedisTemplate}（键值均以字符串存取）</li>
- *     <li>启用 Spring Cache 并声明 {@link CacheManager}，为各业务缓存（members/projects 等）
- *         配置独立的过期时间，key 使用字符串序列化、value 使用 JSON 序列化</li>
  * </ul>
  * <p>
- * 说明：项目内手动 Redis 读写统一通过 {@link com.xdzn.redis.RedisService}，
- * 本类仅服务于声明式 Spring Cache（{@code @Cacheable}/{@code @CacheEvict}）。
+ * 项目内所有 Redis 读写（含业务缓存）统一通过 {@link com.xdzn.redis.RedisService}，
+ * 业务缓存的 key / 过期时间由 {@link com.xdzn.redis.key.CacheRedisKey} 统一管理。
  *
  * @author xdzn
  */
 @Configuration
-@EnableCaching
 public class RedisConfig {
 
     /**
@@ -104,71 +94,4 @@ public class RedisConfig {
         return template;
     }
 
-    /**
-     * 声明 Redis 缓存管理器
-     * <p>
-     * 默认缓存 TTL 30 分钟；members/projects/techStack/timeline/testimonials 缓存 TTL 10 分钟，
-     * dashboard 缓存 TTL 5 分钟。key 用字符串序列化，value 用 JSON 序列化（保留类型信息）。
-     *
-     * @param factory Redis 连接工厂
-     * @return Redis 缓存管理器
-     */
-    @Bean
-    public CacheManager cacheManager(RedisConnectionFactory factory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(redisObjectMapper());
-        StringRedisSerializer stringSerializer = new StringRedisSerializer();
-
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(30))
-                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(stringSerializer))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                        .fromSerializer(jsonSerializer));
-
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(defaultConfig)
-                .withCacheConfiguration("members",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(10))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .withCacheConfiguration("projects",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(10))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .withCacheConfiguration("techStack",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(10))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .withCacheConfiguration("timeline",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(10))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .withCacheConfiguration("testimonials",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(10))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .withCacheConfiguration("dashboard",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(5))
-                                .serializeKeysWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(stringSerializer))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair
-                                        .fromSerializer(jsonSerializer)))
-                .build();
-    }
 }

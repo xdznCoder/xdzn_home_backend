@@ -8,10 +8,10 @@ import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TestimonialDto;
 import com.xdzn.model.entity.Testimonial;
 import com.xdzn.model.vo.TestimonialVO;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import com.xdzn.service.TestimonialService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,13 +31,35 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
         implements TestimonialService {
 
     /**
+     * 统一 Redis 缓存服务
+     */
+    private final RedisService redisService;
+
+    /**
+     * 构造注入缓存服务
+     *
+     * @param redisService 统一 Redis 缓存服务
+     */
+    public TestimonialServiceImpl(RedisService redisService) {
+        this.redisService = redisService;
+    }
+
+    /**
      * 查询全部评价（按排序号升序），结果缓存 10 分钟
      *
      * @return 评价公开视图列表
      */
     @Override
-    @Cacheable(value = "testimonials", key = "'all'", unless = "#result == null || #result.size() == 0")
     public List<TestimonialVO> findAll() {
+        return redisService.getOrSetList(CacheRedisKey.TESTIMONIALS, "all", TestimonialVO.class, this::loadAllTestimonials);
+    }
+
+    /**
+     * 从数据库加载全部评价，供缓存回填
+     *
+     * @return 评价公开视图列表
+     */
+    private List<TestimonialVO> loadAllTestimonials() {
         return lambdaQuery().orderByAsc(Testimonial::getOrder).list().stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
@@ -67,6 +89,16 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      */
     @Override
     public TestimonialVO findById(Long id) {
+        return redisService.getOrSet(CacheRedisKey.TESTIMONIALS_DETAIL, String.valueOf(id), TestimonialVO.class, () -> loadTestimonial(id));
+    }
+
+    /**
+     * 从数据库加载单个评价，供缓存回填
+     *
+     * @param id 评价 id
+     * @return 公开视图；不存在时返回 null
+     */
+    private TestimonialVO loadTestimonial(Long id) {
         Testimonial testimonial = getById(id);
         return testimonial == null ? null : toVO(testimonial);
     }
@@ -78,11 +110,11 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      * @return 创建后的公开视图
      */
     @Override
-    @CacheEvict(value = "testimonials", key = "'all'")
     public TestimonialVO create(TestimonialDto dto) {
         Testimonial testimonial = new Testimonial();
         BeanUtils.copyProperties(dto, testimonial);
         save(testimonial);
+        redisService.delete(CacheRedisKey.TESTIMONIALS, "all");
         return toVO(testimonial);
     }
 
@@ -94,12 +126,13 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      * @return 更新后的公开视图
      */
     @Override
-    @CacheEvict(value = "testimonials", key = "'all'")
     public TestimonialVO update(Long id, TestimonialDto dto) {
         Testimonial testimonial = new Testimonial();
         testimonial.setId(id);
         BeanUtils.copyProperties(dto, testimonial);
         updateById(testimonial);
+        redisService.delete(CacheRedisKey.TESTIMONIALS, "all");
+        redisService.delete(CacheRedisKey.TESTIMONIALS_DETAIL, String.valueOf(id));
         return toVO(getById(id));
     }
 
@@ -109,9 +142,10 @@ public class TestimonialServiceImpl extends ServiceImpl<TestimonialMapper, Testi
      * @param id 评价 id
      */
     @Override
-    @CacheEvict(value = "testimonials", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+        redisService.delete(CacheRedisKey.TESTIMONIALS, "all");
+        redisService.delete(CacheRedisKey.TESTIMONIALS_DETAIL, String.valueOf(id));
     }
 
     // ── 内部方法 ──────────────────────

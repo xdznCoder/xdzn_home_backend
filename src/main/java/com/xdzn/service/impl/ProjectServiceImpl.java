@@ -12,10 +12,10 @@ import com.xdzn.model.dto.ProjectVO;
 import com.xdzn.model.entity.Project;
 import com.xdzn.model.entity.ProjectTechStack;
 import com.xdzn.model.entity.TechStackItem;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import com.xdzn.service.ProjectService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,14 +47,23 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
     private final TechStackItemMapper tsMapper;
 
     /**
-     * 构造注入关联表与技术栈表 Mapper
-     *
-     * @param ptsMapper 项目-技术栈关联表 Mapper
-     * @param tsMapper  技术栈条目表 Mapper
+     * 统一 Redis 缓存服务
      */
-    public ProjectServiceImpl(ProjectTechStackMapper ptsMapper, TechStackItemMapper tsMapper) {
+    private final RedisService redisService;
+
+    /**
+     * 构造注入关联表、技术栈表 Mapper 与缓存服务
+     *
+     * @param ptsMapper    项目-技术栈关联表 Mapper
+     * @param tsMapper     技术栈条目表 Mapper
+     * @param redisService 统一 Redis 缓存服务
+     */
+    public ProjectServiceImpl(ProjectTechStackMapper ptsMapper,
+                              TechStackItemMapper tsMapper,
+                              RedisService redisService) {
         this.ptsMapper = ptsMapper;
         this.tsMapper = tsMapper;
+        this.redisService = redisService;
     }
 
     /**
@@ -63,8 +72,16 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
      * @return 项目视图对象列表
      */
     @Override
-    @Cacheable(value = "projects", key = "'all'", unless = "#result == null || #result.size() == 0")
     public List<ProjectVO> findAll() {
+        return redisService.getOrSetList(CacheRedisKey.PROJECTS, "all", ProjectVO.class, this::loadAllProjects);
+    }
+
+    /**
+     * 从数据库加载全部项目（含技术栈），供缓存回填
+     *
+     * @return 项目视图对象列表
+     */
+    private List<ProjectVO> loadAllProjects() {
         List<Project> projects = lambdaQuery().orderByAsc(Project::getOrder).list();
         if (projects.isEmpty()) return List.of();
 
@@ -110,9 +127,18 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
      */
     @Override
     public ProjectVO findById(Long id) {
+        return redisService.getOrSet(CacheRedisKey.PROJECTS_DETAIL, String.valueOf(id), ProjectVO.class, () -> loadProject(id));
+    }
+
+    /**
+     * 从数据库加载单个项目（含技术栈），供缓存回填
+     *
+     * @param id 项目 id
+     * @return 项目视图对象；不存在时返回 null
+     */
+    private ProjectVO loadProject(Long id) {
         Project project = getById(id);
         if (project == null) return null;
-
         Map<Long, List<String>> techMap = buildTechMap(List.of(id));
         return toVO(project, techMap.getOrDefault(id, List.of()));
     }
@@ -125,12 +151,12 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
      */
     @Override
     @Transactional
-    @CacheEvict(value = "projects", key = "'all'")
     public ProjectVO create(ProjectDto dto) {
         Project project = new Project();
         BeanUtils.copyProperties(dto, project);
         save(project);
         syncTechStack(project.getId(), dto.getTechStackIds());
+        redisService.delete(CacheRedisKey.PROJECTS, "all");
         return toVO(project, getTechStackNames(dto.getTechStackIds()));
     }
 
@@ -143,13 +169,14 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
      */
     @Override
     @Transactional
-    @CacheEvict(value = "projects", key = "'all'")
     public ProjectVO update(Long id, ProjectDto dto) {
         Project project = new Project();
         project.setId(id);
         BeanUtils.copyProperties(dto, project);
         updateById(project);
         syncTechStack(id, dto.getTechStackIds());
+        redisService.delete(CacheRedisKey.PROJECTS, "all");
+        redisService.delete(CacheRedisKey.PROJECTS_DETAIL, String.valueOf(id));
         return toVO(getById(id), getTechStackNames(dto.getTechStackIds()));
     }
 
@@ -160,12 +187,13 @@ public class ProjectServiceImpl extends ServiceImpl<ProjectMapper, Project>
      */
     @Override
     @Transactional
-    @CacheEvict(value = "projects", key = "'all'")
     public void delete(Long id) {
         // 删除关联
         ptsMapper.delete(new LambdaQueryWrapper<ProjectTechStack>()
                 .eq(ProjectTechStack::getProjectId, id));
         removeById(id);
+        redisService.delete(CacheRedisKey.PROJECTS, "all");
+        redisService.delete(CacheRedisKey.PROJECTS_DETAIL, String.valueOf(id));
     }
 
     // ── 内部方法 ──────────────────────

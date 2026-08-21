@@ -8,10 +8,10 @@ import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TechStackDto;
 import com.xdzn.model.entity.TechStackItem;
 import com.xdzn.model.vo.TechStackVO;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import com.xdzn.service.TechStackItemService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,13 +31,35 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
         implements TechStackItemService {
 
     /**
+     * 统一 Redis 缓存服务
+     */
+    private final RedisService redisService;
+
+    /**
+     * 构造注入缓存服务
+     *
+     * @param redisService 统一 Redis 缓存服务
+     */
+    public TechStackItemServiceImpl(RedisService redisService) {
+        this.redisService = redisService;
+    }
+
+    /**
      * 查询全部技术栈条目（按排序号升序），结果缓存 10 分钟
      *
      * @return 技术栈公开视图列表
      */
     @Override
-    @Cacheable(value = "techStack", key = "'all'", unless = "#result == null || #result.size() == 0")
     public List<TechStackVO> findAll() {
+        return redisService.getOrSetList(CacheRedisKey.TECH_STACK, "all", TechStackVO.class, this::loadAllItems);
+    }
+
+    /**
+     * 从数据库加载全部技术栈条目，供缓存回填
+     *
+     * @return 技术栈公开视图列表
+     */
+    private List<TechStackVO> loadAllItems() {
         return lambdaQuery().orderByAsc(TechStackItem::getOrder).list().stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
@@ -67,6 +89,16 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      */
     @Override
     public TechStackVO findById(Long id) {
+        return redisService.getOrSet(CacheRedisKey.TECH_STACK_DETAIL, String.valueOf(id), TechStackVO.class, () -> loadItem(id));
+    }
+
+    /**
+     * 从数据库加载单个技术栈条目，供缓存回填
+     *
+     * @param id 技术栈条目 id
+     * @return 公开视图；不存在时返回 null
+     */
+    private TechStackVO loadItem(Long id) {
         TechStackItem item = getById(id);
         return item == null ? null : toVO(item);
     }
@@ -78,11 +110,11 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      * @return 创建后的公开视图
      */
     @Override
-    @CacheEvict(value = "techStack", key = "'all'")
     public TechStackVO create(TechStackDto dto) {
         TechStackItem item = new TechStackItem();
         BeanUtils.copyProperties(dto, item);
         save(item);
+        redisService.delete(CacheRedisKey.TECH_STACK, "all");
         return toVO(item);
     }
 
@@ -94,12 +126,13 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      * @return 更新后的公开视图
      */
     @Override
-    @CacheEvict(value = "techStack", key = "'all'")
     public TechStackVO update(Long id, TechStackDto dto) {
         TechStackItem item = new TechStackItem();
         item.setId(id);
         BeanUtils.copyProperties(dto, item);
         updateById(item);
+        redisService.delete(CacheRedisKey.TECH_STACK, "all");
+        redisService.delete(CacheRedisKey.TECH_STACK_DETAIL, String.valueOf(id));
         return toVO(getById(id));
     }
 
@@ -109,9 +142,10 @@ public class TechStackItemServiceImpl extends ServiceImpl<TechStackItemMapper, T
      * @param id 技术栈条目 id
      */
     @Override
-    @CacheEvict(value = "techStack", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+        redisService.delete(CacheRedisKey.TECH_STACK, "all");
+        redisService.delete(CacheRedisKey.TECH_STACK_DETAIL, String.valueOf(id));
     }
 
     // ── 内部方法 ──────────────────────

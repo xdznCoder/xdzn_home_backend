@@ -13,8 +13,9 @@ import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.dto.DashboardVO;
 import com.xdzn.model.entity.FinanceRecord;
 import com.xdzn.model.entity.JoinSubmission;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import com.xdzn.service.AdminDashboardService;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -89,7 +90,12 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final FinanceRecordMapper financeMapper;
 
     /**
-     * 构造注入全部业务表 Mapper
+     * 统一 Redis 缓存服务
+     */
+    private final RedisService redisService;
+
+    /**
+     * 构造注入全部业务表 Mapper 与缓存服务
      *
      * @param memberMapper      成员表 Mapper
      * @param projectMapper     项目表 Mapper
@@ -98,6 +104,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
      * @param testimonialMapper 评价表 Mapper
      * @param joinMapper        报名表 Mapper
      * @param userMapper        用户表 Mapper
+     * @param financeMapper     经费收支表 Mapper
+     * @param redisService      统一 Redis 缓存服务
      */
     public AdminDashboardServiceImpl(MemberMapper memberMapper,
                                      ProjectMapper projectMapper,
@@ -106,7 +114,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                                      TestimonialMapper testimonialMapper,
                                      JoinSubmissionMapper joinMapper,
                                      UserMapper userMapper,
-                                     FinanceRecordMapper financeMapper) {
+                                     FinanceRecordMapper financeMapper,
+                                     RedisService redisService) {
         this.memberMapper = memberMapper;
         this.projectMapper = projectMapper;
         this.techStackMapper = techStackMapper;
@@ -115,6 +124,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         this.joinMapper = joinMapper;
         this.userMapper = userMapper;
         this.financeMapper = financeMapper;
+        this.redisService = redisService;
     }
 
     /**
@@ -123,8 +133,16 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
      * @return 看板视图对象
      */
     @Override
-    @Cacheable(value = "dashboard", key = "'summary'", unless = "#result == null")
     public DashboardVO getDashboard() {
+        return redisService.getOrSet(CacheRedisKey.DASHBOARD, "summary", DashboardVO.class, this::doGetDashboard);
+    }
+
+    /**
+     * 从数据库聚合看板数据，供缓存回填
+     *
+     * @return 看板视图对象
+     */
+    private DashboardVO doGetDashboard() {
         // ── 内容统计 ──
         long members = memberMapper.selectCount(null);
         long projects = projectMapper.selectCount(null);
