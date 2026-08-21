@@ -83,3 +83,9 @@ INSERT IGNORE INTO tasks (id, title, description, creator_id, start_date, due_da
 -- task_assignees
 INSERT IGNORE INTO task_assignees (task_id, member_id) VALUES
 (1, 1), (1, 2);
+
+-- announcements
+INSERT IGNORE INTO announcements (id, title, content, is_top, status, published_at, created_by) VALUES
+(1, '团队成立公告', '虚动智能团队正式成立！我们是一个专注前沿技术的极客社团，欢迎加入我们一起探索技术的边界。', 1, 'published', NOW(), 1),
+(2, '新学期招新通知', '2026年秋季招新正式开启！无论你是前端、后端、算法还是设计方向，只要热爱技术，虚动智能就是你的家。报名请前往官网招新页面。', 0, 'published', NOW(), 1),
+(3, '技术分享会预告', '本周五晚19:00，团队成员将分享「基于React的全栈开发实践」，欢迎大家参加！', 0, 'published', DATE_SUB(NOW(), INTERVAL 3 DAY), 1);

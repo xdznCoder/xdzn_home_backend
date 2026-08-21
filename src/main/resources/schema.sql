@@ -153,3 +153,19 @@ CREATE TABLE IF NOT EXISTS files (
     size          BIGINT        NOT NULL COMMENT '文件大小(字节)',
     created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件表';
+
+-- 12. announcements 公告表
+CREATE TABLE IF NOT EXISTS announcements (
+    id             BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    title          VARCHAR(200)  NOT NULL COMMENT '公告标题',
+    content        TEXT          NOT NULL COMMENT '公告内容',
+    is_top         TINYINT       NOT NULL DEFAULT 0 COMMENT '是否置顶(0否1是)',
+    status         VARCHAR(20)   NOT NULL DEFAULT 'draft' COMMENT '状态(draft/published/archived)',
+    published_at   DATETIME      DEFAULT NULL COMMENT '发布时间',
+    created_by     BIGINT        DEFAULT NULL COMMENT '创建人ID(关联users.id)',
+    created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    KEY idx_status (status),
+    KEY idx_is_top (is_top),
+    KEY idx_published_at (published_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公告表';
