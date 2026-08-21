@@ -8,10 +8,10 @@ import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TimelineDto;
 import com.xdzn.model.entity.TimelineEvent;
 import com.xdzn.model.vo.TimelineVO;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import com.xdzn.service.TimelineEventService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,13 +31,35 @@ public class TimelineEventServiceImpl extends ServiceImpl<TimelineEventMapper, T
         implements TimelineEventService {
 
     /**
+     * 统一 Redis 缓存服务
+     */
+    private final RedisService redisService;
+
+    /**
+     * 构造注入缓存服务
+     *
+     * @param redisService 统一 Redis 缓存服务
+     */
+    public TimelineEventServiceImpl(RedisService redisService) {
+        this.redisService = redisService;
+    }
+
+    /**
      * 查询全部时间线事件（按排序号升序），结果缓存 10 分钟
      *
      * @return 事件公开视图列表
      */
     @Override
-    @Cacheable(value = "timeline", key = "'all'", unless = "#result == null || #result.size() == 0")
     public List<TimelineVO> findAll() {
+        return redisService.getOrSetList(CacheRedisKey.TIMELINE, "all", TimelineVO.class, this::loadAllEvents);
+    }
+
+    /**
+     * 从数据库加载全部时间线事件，供缓存回填
+     *
+     * @return 事件公开视图列表
+     */
+    private List<TimelineVO> loadAllEvents() {
         return lambdaQuery().orderByAsc(TimelineEvent::getOrder).list().stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
@@ -67,6 +89,16 @@ public class TimelineEventServiceImpl extends ServiceImpl<TimelineEventMapper, T
      */
     @Override
     public TimelineVO findById(Long id) {
+        return redisService.getOrSet(CacheRedisKey.TIMELINE_DETAIL, String.valueOf(id), TimelineVO.class, () -> loadEvent(id));
+    }
+
+    /**
+     * 从数据库加载单个时间线事件，供缓存回填
+     *
+     * @param id 事件 id
+     * @return 公开视图；不存在时返回 null
+     */
+    private TimelineVO loadEvent(Long id) {
         TimelineEvent event = getById(id);
         return event == null ? null : toVO(event);
     }
@@ -78,11 +110,11 @@ public class TimelineEventServiceImpl extends ServiceImpl<TimelineEventMapper, T
      * @return 创建后的公开视图
      */
     @Override
-    @CacheEvict(value = "timeline", key = "'all'")
     public TimelineVO create(TimelineDto dto) {
         TimelineEvent event = new TimelineEvent();
         BeanUtils.copyProperties(dto, event);
         save(event);
+        redisService.delete(CacheRedisKey.TIMELINE, "all");
         return toVO(event);
     }
 
@@ -94,12 +126,13 @@ public class TimelineEventServiceImpl extends ServiceImpl<TimelineEventMapper, T
      * @return 更新后的公开视图
      */
     @Override
-    @CacheEvict(value = "timeline", key = "'all'")
     public TimelineVO update(Long id, TimelineDto dto) {
         TimelineEvent event = new TimelineEvent();
         event.setId(id);
         BeanUtils.copyProperties(dto, event);
         updateById(event);
+        redisService.delete(CacheRedisKey.TIMELINE, "all");
+        redisService.delete(CacheRedisKey.TIMELINE_DETAIL, String.valueOf(id));
         return toVO(getById(id));
     }
 
@@ -109,9 +142,10 @@ public class TimelineEventServiceImpl extends ServiceImpl<TimelineEventMapper, T
      * @param id 事件 id
      */
     @Override
-    @CacheEvict(value = "timeline", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+        redisService.delete(CacheRedisKey.TIMELINE, "all");
+        redisService.delete(CacheRedisKey.TIMELINE_DETAIL, String.valueOf(id));
     }
 
     // ── 内部方法 ──────────────────────

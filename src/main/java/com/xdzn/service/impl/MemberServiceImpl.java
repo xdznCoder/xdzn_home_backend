@@ -17,8 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import com.xdzn.redis.RedisService;
+import com.xdzn.redis.key.CacheRedisKey;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -43,6 +43,11 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     private final UserMapper userMapper;
 
     /**
+     * 统一 Redis 缓存服务
+     */
+    private final RedisService redisService;
+
+    /**
      * 密码加密器（创建登录账号时用 BCrypt 加密密码）
      */
     private final BCryptPasswordEncoder passwordEncoder;
@@ -50,10 +55,12 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     /**
      * 构造注入依赖（baseMapper 由 MyBatis-Plus 自动注入）
      *
-     * @param userMapper 用户表 Mapper
+     * @param userMapper   用户表 Mapper
+     * @param redisService 统一 Redis 缓存服务
      */
-    public MemberServiceImpl(UserMapper userMapper) {
+    public MemberServiceImpl(UserMapper userMapper, RedisService redisService) {
         this.userMapper = userMapper;
+        this.redisService = redisService;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
@@ -63,9 +70,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      * @return 成员列表
      */
     @Override
-    @Cacheable(value = "members", key = "'all'", unless = "#result == null || #result.size() == 0")
     public List<Member> findAll() {
-        return lambdaQuery().orderByAsc(Member::getOrder).list();
+        return redisService.getOrSetList(CacheRedisKey.MEMBERS, "all", Member.class, () -> lambdaQuery().orderByAsc(Member::getOrder).list());
     }
 
     /**
@@ -91,7 +97,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      */
     @Override
     public Member findById(Long id) {
-        return getById(id);
+        return redisService.getOrSet(CacheRedisKey.MEMBERS_DETAIL, String.valueOf(id), Member.class, () -> getById(id));
     }
 
     /**
@@ -102,7 +108,6 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      */
     @Override
     @Transactional
-    @CacheEvict(value = "members", key = "'all'")
     public Member create(MemberDto dto) {
         Member member = new Member();
         BeanUtils.copyProperties(dto, member);
@@ -113,6 +118,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         }
 
         save(member);
+        redisService.delete(CacheRedisKey.MEMBERS, "all");
         return member;
     }
 
@@ -124,12 +130,13 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      * @return 更新后的成员
      */
     @Override
-    @CacheEvict(value = "members", key = "'all'")
     public Member update(Long id, MemberDto dto) {
         Member member = new Member();
         member.setId(id);
         BeanUtils.copyProperties(dto, member);
         updateById(member);
+        redisService.delete(CacheRedisKey.MEMBERS, "all");
+        redisService.delete(CacheRedisKey.MEMBERS_DETAIL, String.valueOf(id));
         return getById(id);
     }
 
@@ -139,9 +146,10 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
      * @param id 成员 id
      */
     @Override
-    @CacheEvict(value = "members", key = "'all'")
     public void delete(Long id) {
         removeById(id);
+        redisService.delete(CacheRedisKey.MEMBERS, "all");
+        redisService.delete(CacheRedisKey.MEMBERS_DETAIL, String.valueOf(id));
     }
 
     @Override
@@ -152,7 +160,6 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
     }
 
     @Override
-    @CacheEvict(value = "members", key = "'all'")
     public Member updateMemberByUserId(Long userId, MemberDto dto) {
         Member member = getMemberByUserId(userId);
         if (member == null) {
@@ -160,6 +167,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
             BeanUtils.copyProperties(dto, newMember);
             newMember.setUserId(userId);
             save(newMember);
+            redisService.delete(CacheRedisKey.MEMBERS, "all");
             return newMember;
         }
         
@@ -179,6 +187,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         if (dto.getBio() != null) member.setBio(dto.getBio());
         
         updateById(member);
+        redisService.delete(CacheRedisKey.MEMBERS, "all");
+        redisService.delete(CacheRedisKey.MEMBERS_DETAIL, String.valueOf(member.getId()));
         return member;
     }
 
