@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -161,6 +162,7 @@ public class FinanceServiceImpl implements FinanceService {
     /**
      * 实时汇总经费：一次 GROUP BY type 聚合出进账/支出总额，余额 = 进账 - 支出。
      * 空表时 GROUP BY 返回 0 行，三项均归零（不返回 null）。
+     * 同时计算本月收支与按分类汇总。
      *
      * @return 汇总视图
      */
@@ -169,6 +171,7 @@ public class FinanceServiceImpl implements FinanceService {
         BigDecimal income = BigDecimal.ZERO;
         BigDecimal expense = BigDecimal.ZERO;
 
+        // 1. 累计总额（按 type 分组）
         List<Map<String, Object>> rows = financeMapper.selectMaps(
                 new QueryWrapper<FinanceRecord>()
                         .select("type", "COALESCE(SUM(amount), 0) AS total")
@@ -187,10 +190,62 @@ public class FinanceServiceImpl implements FinanceService {
             }
         }
 
+        // 2. 本月收支（按本月初过滤）
+        LocalDateTime monthStart = LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        BigDecimal monthlyIncome = BigDecimal.ZERO;
+        BigDecimal monthlyExpense = BigDecimal.ZERO;
+
+        List<Map<String, Object>> monthRows = financeMapper.selectMaps(
+                new QueryWrapper<FinanceRecord>()
+                        .select("type", "COALESCE(SUM(amount), 0) AS total")
+                        .ge("occurred_at", monthStart)
+                        .groupBy("type"));
+        for (Map<String, Object> row : monthRows) {
+            Object type = row.get("type");
+            Object total = row.get("total");
+            if (type == null || total == null) {
+                continue;
+            }
+            BigDecimal amount = new BigDecimal(String.valueOf(total));
+            if ("income".equals(type)) {
+                monthlyIncome = amount;
+            } else if ("expense".equals(type)) {
+                monthlyExpense = amount;
+            }
+        }
+
+        // 3. 按分类汇总（按 category + type 分组）
+        List<Map<String, Object>> catRows = financeMapper.selectMaps(
+                new QueryWrapper<FinanceRecord>()
+                        .select("category", "type", "COALESCE(SUM(amount), 0) AS total")
+                        .groupBy("category", "type"));
+        List<FinanceSummaryVO.CategorySummary> categorySummaries = new ArrayList<>();
+        for (Map<String, Object> row : catRows) {
+            Object category = row.get("category");
+            Object type = row.get("type");
+            Object total = row.get("total");
+            if (category == null || type == null || total == null) {
+                continue;
+            }
+            FinanceSummaryVO.CategorySummary cs = new FinanceSummaryVO.CategorySummary();
+            cs.setCategory(String.valueOf(category));
+            cs.setType(String.valueOf(type));
+            cs.setTotalAmount(new BigDecimal(String.valueOf(total)));
+            categorySummaries.add(cs);
+        }
+
         FinanceSummaryVO vo = new FinanceSummaryVO();
         vo.setTotalIncome(income);
         vo.setTotalExpense(expense);
         vo.setBalance(income.subtract(expense));
+        vo.setMonthlyIncome(monthlyIncome);
+        vo.setMonthlyExpense(monthlyExpense);
+        vo.setCategorySummaries(categorySummaries);
         return vo;
     }
 
