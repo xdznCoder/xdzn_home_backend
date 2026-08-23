@@ -201,3 +201,34 @@ CREATE TABLE IF NOT EXISTS resources (
     KEY idx_category (category_id),
     KEY idx_uploader (uploader_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资源分享';
+
+-- 15. qq_groups QQ群配置表
+CREATE TABLE IF NOT EXISTS qq_groups (
+    id          BIGINT       NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    group_no    VARCHAR(32)  NOT NULL COMMENT 'QQ群号',
+    group_name  VARCHAR(64)  NOT NULL COMMENT '群名称',
+    purpose     VARCHAR(128) DEFAULT NULL COMMENT '用途（如 新生群/核心群/比赛群）',
+    enabled     TINYINT      NOT NULL DEFAULT 1 COMMENT '是否启用',
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_group_no (group_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='QQ群配置';
+
+-- 16. announcements 公告表
+CREATE TABLE IF NOT EXISTS announcements (
+    id          BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
+    title       VARCHAR(255)  NOT NULL COMMENT '公告标题',
+    content     TEXT          NOT NULL COMMENT '公告内容',
+    author_id   BIGINT        NOT NULL COMMENT '发布人ID(关联users)',
+    send_email  TINYINT       NOT NULL DEFAULT 0 COMMENT '是否发送到成员邮箱',
+    created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公告';
+
+-- 17. announcement_targets 公告-目标QQ群关联表
+CREATE TABLE IF NOT EXISTS announcement_targets (
+    announcement_id BIGINT NOT NULL COMMENT '公告ID',
+    qq_group_id     BIGINT NOT NULL COMMENT '目标QQ群ID',
+    PRIMARY KEY (announcement_id, qq_group_id),
+    KEY idx_qq_group (qq_group_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公告-目标QQ群关联';

@@ -32,6 +32,15 @@ spring:
       # 上传大小限制（单个文件 20MB，请求 40MB）
       max-file-size: 20MB
       max-request-size: 40MB
+  # 邮件发送（站外通信：公告推送），配置 SMTP 后启用
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.ssl.enable: true
 
 sa-token:
   is-jwt: true
@@ -76,6 +85,10 @@ app:
     github-path: ${GITHUB_IMG_PATH:images}
     # 仓库分支
     github-branch: ${GITHUB_IMG_BRANCH:main}
+  # QQ 机器人（go-cqhttp / OneBot HTTP 接口，站外通信：公告推送群消息）
+  qq-bot:
+    # 接口地址，留空则跳过 QQ 群发送（仅记录日志）
+    url: ${QQ_BOT_URL:}
 
 # 接口文档（Knife4j / SpringDoc）
 springdoc:

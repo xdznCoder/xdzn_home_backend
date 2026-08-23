@@ -74,6 +74,10 @@ public class SaTokenConfig implements WebMvcConfigurer {
             SaRouter.match("/api/resource-categories/**")
                     .check(r -> StpUtil.checkLogin());
 
+            // 公告 / QQ 群：读登录（站内公告展示、选群），写操作由下方通用规则要求 captain
+            SaRouter.match("/api/announcements/**", "/api/qq-groups/**")
+                    .check(r -> StpUtil.checkLogin());
+
             // CMS 写接口需要登录 + admin 角色（资源分享写操作除外，由上方规则覆盖）
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")
