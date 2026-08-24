@@ -1,6 +1,7 @@
 package com.xdzn.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -28,6 +29,17 @@ public class AnnouncementDto {
      */
     @NotBlank(message = "公告内容不能为空")
     private String content;
+
+    /**
+     * 是否置顶（1 置顶 / 0 普通）
+     */
+    private Integer isTop;
+
+    /**
+     * 状态：draft（草稿）/ published（已发布）/ archived（归档）
+     */
+    @Pattern(regexp = "^(draft|published|archived)$", message = "状态仅允许 draft/published/archived")
+    private String status;
 
     /**
      * 目标 QQ 群 id 列表（可多个，用于「区分针对不同群聊发布公告」）

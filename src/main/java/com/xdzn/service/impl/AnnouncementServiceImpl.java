@@ -95,7 +95,9 @@ public class AnnouncementServiceImpl implements AnnouncementService {
     public PageResult<AnnouncementVO> findAllByPage(long current, long size) {
         Page<Announcement> page = announcementMapper.selectPage(
                 new Page<>(current, size),
-                new LambdaQueryWrapper<Announcement>().orderByDesc(Announcement::getCreatedAt));
+                new LambdaQueryWrapper<Announcement>()
+                        .orderByDesc(Announcement::getIsTop)
+                        .orderByDesc(Announcement::getCreatedAt));
         List<AnnouncementVO> voList = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
         return new PageResult<>(page.getCurrent(), page.getSize(), page.getTotal(), page.getPages(), voList);
     }
@@ -118,6 +120,8 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         Announcement announcement = new Announcement();
         announcement.setTitle(dto.getTitle());
         announcement.setContent(dto.getContent());
+        announcement.setIsTop(dto.getIsTop() != null ? dto.getIsTop() : 0);
+        announcement.setStatus(dto.getStatus() != null ? dto.getStatus() : "published");
         announcement.setAuthorId(StpUtil.getLoginIdAsLong());
         announcement.setSendEmail(Boolean.TRUE.equals(dto.getSendEmail()) ? 1 : 0);
         announcementMapper.insert(announcement);
@@ -140,6 +144,9 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         announcement.setId(id);
         announcement.setTitle(dto.getTitle());
         announcement.setContent(dto.getContent());
+        // updateById 忽略 null 字段：isTop/status 传 null 时保持原值
+        announcement.setIsTop(dto.getIsTop());
+        announcement.setStatus(dto.getStatus());
         announcement.setSendEmail(Boolean.TRUE.equals(dto.getSendEmail()) ? 1 : 0);
         announcementMapper.updateById(announcement);
         syncTargets(id, dto.getTargetGroupIds());

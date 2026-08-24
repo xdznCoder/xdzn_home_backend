@@ -219,10 +219,14 @@ CREATE TABLE IF NOT EXISTS announcements (
     id          BIGINT        NOT NULL PRIMARY KEY COMMENT '雪花ID',
     title       VARCHAR(255)  NOT NULL COMMENT '公告标题',
     content     TEXT          NOT NULL COMMENT '公告内容',
+    is_top      TINYINT       NOT NULL DEFAULT 0 COMMENT '是否置顶(0否1是)',
+    status      VARCHAR(20)   NOT NULL DEFAULT 'published' COMMENT '状态(draft草稿/published已发布/archived归档)',
     author_id   BIGINT        NOT NULL COMMENT '发布人ID(关联users)',
     send_email  TINYINT       NOT NULL DEFAULT 0 COMMENT '是否发送到成员邮箱',
     created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_status (status),
+    KEY idx_is_top (is_top)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='公告';
 
 -- 17. announcement_targets 公告-目标QQ群关联表
