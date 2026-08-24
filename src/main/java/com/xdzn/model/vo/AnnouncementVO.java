@@ -32,6 +32,16 @@ public class AnnouncementVO {
     private String content;
 
     /**
+     * 是否置顶（1 置顶 / 0 普通）
+     */
+    private Integer isTop;
+
+    /**
+     * 状态：draft / published / archived
+     */
+    private String status;
+
+    /**
      * 发布人 ID
      */
     private Long authorId;

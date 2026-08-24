@@ -36,6 +36,16 @@ public class Announcement {
     private String content;
 
     /**
+     * 是否置顶（1 置顶 / 0 普通）
+     */
+    private Integer isTop;
+
+    /**
+     * 状态：draft（草稿）/ published（已发布）/ archived（归档）
+     */
+    private String status;
+
+    /**
      * 发布人 ID（关联 users）
      */
     private Long authorId;
