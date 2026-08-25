@@ -9,6 +9,7 @@ import com.xdzn.service.FinanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -125,6 +126,25 @@ public class FinanceController {
             @PathVariable @Min(value = 1, message = "id 不合法") Long id,
             @Valid @RequestBody FinanceRecordDto dto) {
         return Result.ok(financeService.update(id, dto));
+    }
+
+    /**
+     * 导出经费收支明细（仅 admin，支持筛选）
+     *
+     * @param response HTTP 响应
+     * @param type     收支类型（可选）
+     * @param category 分类（可选）
+     */
+    @Operation(summary = "导出经费明细 Excel", description = "导出全部收支明细（可按类型/分类筛选），需 admin 权限")
+    @GetMapping("/export")
+    public void export(
+            HttpServletResponse response,
+            @Parameter(description = "收支类型筛选（income/expense）")
+            @RequestParam(required = false)
+            @Pattern(regexp = "^(income|expense)$", message = "收支类型仅允许 income/expense") String type,
+            @Parameter(description = "分类筛选")
+            @RequestParam(required = false) String category) {
+        financeService.export(response, type, category);
     }
 
     /**

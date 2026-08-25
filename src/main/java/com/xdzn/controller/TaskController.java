@@ -8,6 +8,7 @@ import com.xdzn.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -135,6 +136,18 @@ public class TaskController {
      * @param id 任务 id
      * @return 操作结果
      */
+    @Operation(summary = "导出任务 Excel", description = "导出全部任务（可按状态/指派成员筛选），需 admin 权限")
+    @GetMapping("/export")
+    public void export(
+            HttpServletResponse response,
+            @Parameter(description = "任务状态筛选（todo/in_progress/done）")
+            @RequestParam(required = false)
+            @Pattern(regexp = "^(todo|in_progress|done)$", message = "状态仅允许 todo/in_progress/done") String status,
+            @Parameter(description = "指派成员 id 筛选")
+            @RequestParam(required = false) Long memberId) {
+        taskService.export(response, status, memberId);
+    }
+
     @Operation(summary = "删除任务", description = "删除任务及其指派关系，需 admin 权限")
     @DeleteMapping("/{id}")
     public Result<Void> delete(

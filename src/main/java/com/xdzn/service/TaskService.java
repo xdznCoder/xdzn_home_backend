@@ -3,6 +3,7 @@ package com.xdzn.service;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TaskDto;
 import com.xdzn.model.vo.TaskVO;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 
@@ -73,4 +74,13 @@ public interface TaskService {
      * @return 更新后的任务视图
      */
     TaskVO updateStatus(Long id, String status);
+
+    /**
+     * 导出任务列表到 Excel（支持筛选条件）
+     *
+     * @param response HTTP 响应
+     * @param status   任务状态（可选）
+     * @param memberId 指派成员 id（可选）
+     */
+    void export(HttpServletResponse response, String status, Long memberId);
 }

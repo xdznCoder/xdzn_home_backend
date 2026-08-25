@@ -47,14 +47,14 @@ public class SaTokenConfig implements WebMvcConfigurer {
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("captain"));
 
-            // 报名管理（列表/改状态/删除）需要 admin；POST 报名对匿名开放
-            SaRouter.match("/api/joins")
+            // 报名管理（列表/改状态/删除/导出）需要 admin；POST 报名对匿名开放
+            SaRouter.match("/api/joins", "/api/joins/export")
                     .matchMethod("GET", "PATCH", "DELETE")
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("captain"));
 
-            // 任务管理：全部分页需 admin（我的任务/详情/状态更新仅需登录，写操作由下方规则覆盖）
-            SaRouter.match("/api/tasks/page")
+            // 任务管理：全部分页需 admin（我的任务/详情/状态更新仅需登录，写操作由下方规则覆盖）；导出需 captain
+            SaRouter.match("/api/tasks/page", "/api/tasks/export")
                     .check(r -> StpUtil.checkLogin())
                     .check(r -> StpUtil.checkRole("captain"));
 
@@ -62,9 +62,12 @@ public class SaTokenConfig implements WebMvcConfigurer {
             SaRouter.match("/api/files/**")
                     .check(r -> StpUtil.checkLogin());
 
-            // 经费明细/汇总/详情：登录既可读（member 只读），写操作由下方通用规则要求 admin
+            // 经费明细/汇总/详情：登录既可读（member 只读）；导出需 captain
             SaRouter.match("/api/finance/page", "/api/finance/summary", "/api/finance/*")
                     .check(r -> StpUtil.checkLogin());
+            SaRouter.match("/api/finance/export")
+                    .check(r -> StpUtil.checkLogin())
+                    .check(r -> StpUtil.checkRole("captain"));
 
             // 资源分享：读写均需登录（所有成员可上传/检索），写操作不走下方全局 captain 规则
             SaRouter.match("/api/resources/**")

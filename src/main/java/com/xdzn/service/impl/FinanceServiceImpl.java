@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xdzn.common.BusinessException;
+import com.xdzn.common.excel.ExcelService;
 import com.xdzn.mapper.FinanceRecordMapper;
 import com.xdzn.mapper.UserMapper;
+import com.xdzn.model.dto.FinanceExcelRow;
 import com.xdzn.model.dto.FinanceRecordDto;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.FinanceRecord;
@@ -14,6 +16,7 @@ import com.xdzn.model.entity.User;
 import com.xdzn.model.vo.FinanceRecordVO;
 import com.xdzn.model.vo.FinanceSummaryVO;
 import com.xdzn.service.FinanceService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -54,14 +57,21 @@ public class FinanceServiceImpl implements FinanceService {
     private final UserMapper userMapper;
 
     /**
+     * 通用 Excel 导出服务
+     */
+    private final ExcelService excelService;
+
+    /**
      * 构造注入依赖
      *
      * @param financeMapper 经费记录表 Mapper
      * @param userMapper    用户表 Mapper
+     * @param excelService  通用 Excel 导出服务
      */
-    public FinanceServiceImpl(FinanceRecordMapper financeMapper, UserMapper userMapper) {
+    public FinanceServiceImpl(FinanceRecordMapper financeMapper, UserMapper userMapper, ExcelService excelService) {
         this.financeMapper = financeMapper;
         this.userMapper = userMapper;
+        this.excelService = excelService;
     }
 
     /**
@@ -247,6 +257,59 @@ public class FinanceServiceImpl implements FinanceService {
         vo.setMonthlyExpense(monthlyExpense);
         vo.setCategorySummaries(categorySummaries);
         return vo;
+    }
+
+    /**
+     * 导出经费收支明细到 Excel（支持筛选条件，导出全部匹配记录）
+     *
+     * @param response HTTP 响应
+     * @param type     收支类型（可选）
+     * @param category 分类（可选）
+     */
+    @Override
+    public void export(HttpServletResponse response, String type, String category) {
+        List<FinanceRecord> records = financeMapper.selectList(buildWrapper(type, category));
+        List<FinanceExcelRow> rows = records.stream().map(this::toExcelRow).collect(Collectors.toList());
+        excelService.export(response, rows, FinanceExcelRow.class, "经费明细", "经费收支明细");
+    }
+
+    /**
+     * 构建经费明细查询条件（列表与导出共用）
+     *
+     * @param type     收支类型（可选）
+     * @param category 分类（可选）
+     * @return 查询条件
+     */
+    private LambdaQueryWrapper<FinanceRecord> buildWrapper(String type, String category) {
+        LambdaQueryWrapper<FinanceRecord> wrapper = new LambdaQueryWrapper<>();
+        if (type != null && !type.isBlank()) {
+            wrapper.eq(FinanceRecord::getType, type);
+        }
+        if (category != null && !category.isBlank()) {
+            wrapper.like(FinanceRecord::getCategory, category);
+        }
+        wrapper.orderByDesc(FinanceRecord::getOccurredAt);
+        return wrapper;
+    }
+
+    /**
+     * 经费记录转导出行
+     *
+     * @param record 经费记录实体
+     * @return 导出行
+     */
+    private FinanceExcelRow toExcelRow(FinanceRecord record) {
+        FinanceExcelRow row = new FinanceExcelRow();
+        row.setOccurredAt(record.getOccurredAt() != null ? record.getOccurredAt().toString() : "");
+        row.setType("income".equals(record.getType()) ? "进账" : "支出");
+        row.setCategory(record.getCategory());
+        row.setAmount(record.getAmount());
+        row.setDescription(record.getDescription());
+        if (record.getOperatorId() != null) {
+            User operator = userMapper.selectById(record.getOperatorId());
+            row.setOperatorName(operator != null ? operator.getName() : "");
+        }
+        return row;
     }
 
     // ── 内部方法 ──────────────────────

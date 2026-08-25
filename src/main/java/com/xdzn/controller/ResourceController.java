@@ -8,6 +8,7 @@ import com.xdzn.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -119,6 +120,12 @@ public class ResourceController {
      * @param id 资源 id
      * @return 操作结果
      */
+    @Operation(summary = "导出资源 Excel", description = "导出全部资源，登录成员可调用")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) {
+        resourceService.export(response);
+    }
+
     @Operation(summary = "删除资源", description = "删除资源（上传人本人或队长）")
     @DeleteMapping("/{id}")
     public Result<Void> delete(

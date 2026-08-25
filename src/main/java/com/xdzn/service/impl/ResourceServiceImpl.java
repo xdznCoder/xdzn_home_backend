@@ -4,16 +4,19 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xdzn.common.BusinessException;
+import com.xdzn.common.excel.ExcelService;
 import com.xdzn.mapper.ResourceCategoryMapper;
 import com.xdzn.mapper.ResourceMapper;
 import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.ResourceDto;
+import com.xdzn.model.dto.ResourceExcelRow;
 import com.xdzn.model.entity.Resource;
 import com.xdzn.model.entity.ResourceCategory;
 import com.xdzn.model.entity.User;
 import com.xdzn.model.vo.ResourceVO;
 import com.xdzn.service.ResourceService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -58,12 +61,19 @@ public class ResourceServiceImpl implements ResourceService {
      * @param categoryMapper 分类表 Mapper
      * @param userMapper     用户表 Mapper
      */
+    /**
+     * 通用 Excel 导出服务
+     */
+    private final ExcelService excelService;
+
     public ResourceServiceImpl(ResourceMapper resourceMapper,
                                ResourceCategoryMapper categoryMapper,
-                               UserMapper userMapper) {
+                               UserMapper userMapper,
+                               ExcelService excelService) {
         this.resourceMapper = resourceMapper;
         this.categoryMapper = categoryMapper;
         this.userMapper = userMapper;
+        this.excelService = excelService;
     }
 
     /**
@@ -210,5 +220,37 @@ public class ResourceServiceImpl implements ResourceService {
             vo.setUploaderName(uploader != null ? uploader.getName() : null);
         }
         return vo;
+    }
+
+    /**
+     * 导出资源列表到 Excel
+     *
+     * @param response HTTP 响应
+     */
+    @Override
+    public void export(HttpServletResponse response) {
+        List<Resource> resources = resourceMapper.selectList(
+                new LambdaQueryWrapper<Resource>().orderByDesc(Resource::getCreatedAt));
+        List<ResourceExcelRow> rows = resources.stream().map(this::toExcelRow).collect(Collectors.toList());
+        excelService.export(response, rows, ResourceExcelRow.class, "资源", "资源分享");
+    }
+
+    /**
+     * 资源转导出行
+     *
+     * @param resource 资源实体
+     * @return 导出行
+     */
+    private ResourceExcelRow toExcelRow(Resource resource) {
+        ResourceVO vo = toVO(resource);
+        ResourceExcelRow row = new ResourceExcelRow();
+        row.setTitle(vo.getTitle());
+        row.setCategoryName(vo.getCategoryName());
+        row.setTags(vo.getTags());
+        row.setUploaderName(vo.getUploaderName());
+        row.setAttachmentName(vo.getAttachmentName());
+        row.setCreatedAt(vo.getCreatedAt() != null ? vo.getCreatedAt().toString() : "");
+        row.setDescription(vo.getDescription());
+        return row;
     }
 }
