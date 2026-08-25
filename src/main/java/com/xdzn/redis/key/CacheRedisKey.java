@@ -68,7 +68,12 @@ public enum CacheRedisKey implements KeyPrefix {
     /**
      * 管理看板（cache:dashboard:summary）
      */
-    DASHBOARD("cache:dashboard:", 5 * 60);
+    DASHBOARD("cache:dashboard:", 5 * 60),
+
+    /**
+     * 用户角色（cache:user-role:{userId}，鉴权频繁查询角色用）
+     */
+    USER_ROLE("cache:user-role:", 30 * 60);
 
     /**
      * key 前缀

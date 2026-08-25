@@ -217,6 +217,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberMapper, Member>
         }
         user.setRole(role);
         userMapper.updateById(user);
+        // 角色缓存失效：下次鉴权 getRoleList 读到新角色
+        redisService.delete(CacheRedisKey.USER_ROLE, String.valueOf(user.getId()));
     }
 
     /**
