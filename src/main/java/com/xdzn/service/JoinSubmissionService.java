@@ -2,6 +2,7 @@ package com.xdzn.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xdzn.model.entity.JoinSubmission;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 
@@ -44,4 +45,11 @@ public interface JoinSubmissionService extends IService<JoinSubmission> {
      * @param id 报名记录 id
      */
     void delete(Long id);
+
+    /**
+     * 导出报名列表到 Excel
+     *
+     * @param response HTTP 响应
+     */
+    void export(HttpServletResponse response);
 }

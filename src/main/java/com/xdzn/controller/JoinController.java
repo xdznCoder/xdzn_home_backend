@@ -8,6 +8,7 @@ import com.xdzn.service.JoinSubmissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
@@ -98,5 +99,16 @@ public class JoinController {
             @PathVariable Long id) {
         joinService.delete(id);
         return Result.ok();
+    }
+
+    /**
+     * 导出报名列表（需 admin 权限）
+     *
+     * @param response HTTP 响应
+     */
+    @Operation(summary = "导出报名 Excel", description = "导出全部招新报名，需 admin 权限")
+    @GetMapping("/export")
+    public void export(HttpServletResponse response) {
+        joinService.export(response);
     }
 }

@@ -4,6 +4,7 @@ import com.xdzn.model.dto.FinanceRecordDto;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.vo.FinanceRecordVO;
 import com.xdzn.model.vo.FinanceSummaryVO;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * FinanceService
@@ -70,4 +71,13 @@ public interface FinanceService {
      * @return 汇总视图
      */
     FinanceSummaryVO summary();
+
+    /**
+     * 导出经费收支明细到 Excel（支持筛选条件）
+     *
+     * @param response HTTP 响应
+     * @param type     收支类型（可选）
+     * @param category 分类（可选）
+     */
+    void export(HttpServletResponse response, String type, String category);
 }

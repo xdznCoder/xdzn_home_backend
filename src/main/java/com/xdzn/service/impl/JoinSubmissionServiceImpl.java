@@ -1,12 +1,16 @@
 package com.xdzn.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xdzn.common.excel.ExcelService;
 import com.xdzn.mapper.JoinSubmissionMapper;
+import com.xdzn.model.dto.JoinExcelRow;
 import com.xdzn.model.entity.JoinSubmission;
 import com.xdzn.service.JoinSubmissionService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * JoinSubmissionServiceImpl
@@ -19,6 +23,20 @@ import java.util.List;
 @Service
 public class JoinSubmissionServiceImpl extends ServiceImpl<JoinSubmissionMapper, JoinSubmission>
         implements JoinSubmissionService {
+
+    /**
+     * 通用 Excel 导出服务
+     */
+    private final ExcelService excelService;
+
+    /**
+     * 构造注入依赖
+     *
+     * @param excelService 通用 Excel 导出服务
+     */
+    public JoinSubmissionServiceImpl(ExcelService excelService) {
+        this.excelService = excelService;
+    }
 
     /**
      * 创建报名记录，状态初始化为 pending
@@ -68,5 +86,48 @@ public class JoinSubmissionServiceImpl extends ServiceImpl<JoinSubmissionMapper,
     @Override
     public void delete(Long id) {
         removeById(id);
+    }
+
+    /**
+     * 导出报名列表到 Excel
+     *
+     * @param response HTTP 响应
+     */
+    @Override
+    public void export(HttpServletResponse response) {
+        List<JoinSubmission> all = findAll();
+        List<JoinExcelRow> rows = all.stream().map(this::toExcelRow).collect(Collectors.toList());
+        excelService.export(response, rows, JoinExcelRow.class, "报名", "招新报名");
+    }
+
+    /**
+     * 报名转导出行
+     *
+     * @param submission 报名实体
+     * @return 导出行
+     */
+    private JoinExcelRow toExcelRow(JoinSubmission submission) {
+        JoinExcelRow row = new JoinExcelRow();
+        row.setName(submission.getName());
+        row.setGrade(submission.getGrade());
+        row.setDirection(submission.getDirection());
+        row.setStatus(statusText(submission.getStatus()));
+        row.setCreatedAt(submission.getCreatedAt() != null ? submission.getCreatedAt().toString() : "");
+        return row;
+    }
+
+    /**
+     * 报名状态转中文
+     *
+     * @param status 状态
+     * @return 中文
+     */
+    private String statusText(String status) {
+        return switch (status == null ? "pending" : status) {
+            case "contacted" -> "已联系";
+            case "accepted" -> "已通过";
+            case "rejected" -> "已拒绝";
+            default -> "待处理";
+        };
     }
 }

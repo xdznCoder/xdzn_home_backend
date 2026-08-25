@@ -3,6 +3,7 @@ package com.xdzn.service;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.ResourceDto;
 import com.xdzn.model.vo.ResourceVO;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * ResourceService
@@ -61,4 +62,11 @@ public interface ResourceService {
      * @return 资源视图；不存在时返回 null
      */
     ResourceVO findById(Long id);
+
+    /**
+     * 导出资源列表到 Excel
+     *
+     * @param response HTTP 响应
+     */
+    void export(HttpServletResponse response);
 }

@@ -4,12 +4,14 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xdzn.common.BusinessException;
+import com.xdzn.common.excel.ExcelService;
 import com.xdzn.mapper.MemberMapper;
 import com.xdzn.mapper.TaskAssigneeMapper;
 import com.xdzn.mapper.TaskMapper;
 import com.xdzn.mapper.UserMapper;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.TaskDto;
+import com.xdzn.model.dto.TaskExcelRow;
 import com.xdzn.model.entity.Member;
 import com.xdzn.model.entity.Task;
 import com.xdzn.model.entity.TaskAssignee;
@@ -17,6 +19,7 @@ import com.xdzn.model.entity.User;
 import com.xdzn.model.vo.TaskAssigneeVO;
 import com.xdzn.model.vo.TaskVO;
 import com.xdzn.service.TaskService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -71,21 +74,29 @@ public class TaskServiceImpl implements TaskService {
     private static final Set<String> VALID_STATUS = Set.of("todo", "in_progress", "done");
 
     /**
+     * 通用 Excel 导出服务
+     */
+    private final ExcelService excelService;
+
+    /**
      * 构造注入依赖
      *
      * @param taskMapper      任务表 Mapper
      * @param assigneeMapper  任务-成员关联表 Mapper
      * @param memberMapper    成员表 Mapper
      * @param userMapper      用户表 Mapper
+     * @param excelService    通用 Excel 导出服务
      */
     public TaskServiceImpl(TaskMapper taskMapper,
                            TaskAssigneeMapper assigneeMapper,
                            MemberMapper memberMapper,
-                           UserMapper userMapper) {
+                           UserMapper userMapper,
+                           ExcelService excelService) {
         this.taskMapper = taskMapper;
         this.assigneeMapper = assigneeMapper;
         this.memberMapper = memberMapper;
         this.userMapper = userMapper;
+        this.excelService = excelService;
     }
 
     /**
@@ -299,5 +310,93 @@ public class TaskServiceImpl implements TaskService {
             }).collect(Collectors.toList()));
         }
         return vo;
+    }
+
+    /**
+     * 导出任务列表到 Excel（支持筛选条件）
+     *
+     * @param response HTTP 响应
+     * @param status   任务状态（可选）
+     * @param memberId 指派成员 id（可选）
+     */
+    @Override
+    public void export(HttpServletResponse response, String status, Long memberId) {
+        List<Task> tasks = findTasks(status, memberId);
+        List<TaskExcelRow> rows = tasks.stream().map(this::toExcelRow).collect(Collectors.toList());
+        excelService.export(response, rows, TaskExcelRow.class, "任务", "任务列表");
+    }
+
+    /**
+     * 按筛选条件查询全部任务（导出用，复用列表查询条件）
+     *
+     * @param status   任务状态（可选）
+     * @param memberId 指派成员 id（可选）
+     * @return 任务列表
+     */
+    private List<Task> findTasks(String status, Long memberId) {
+        LambdaQueryWrapper<Task> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isBlank()) {
+            wrapper.eq(Task::getStatus, status);
+        }
+        if (memberId != null) {
+            List<Long> taskIds = assigneeMapper.selectList(
+                            new LambdaQueryWrapper<TaskAssignee>().eq(TaskAssignee::getMemberId, memberId))
+                    .stream().map(TaskAssignee::getTaskId).toList();
+            if (taskIds.isEmpty()) {
+                return List.of();
+            }
+            wrapper.in(Task::getId, taskIds);
+        }
+        wrapper.orderByDesc(Task::getDueDate);
+        return taskMapper.selectList(wrapper);
+    }
+
+    /**
+     * 任务转导出行
+     *
+     * @param task 任务实体
+     * @return 导出行
+     */
+    private TaskExcelRow toExcelRow(Task task) {
+        TaskVO vo = toVO(task);
+        TaskExcelRow row = new TaskExcelRow();
+        row.setTitle(vo.getTitle());
+        row.setPriority(priorityText(vo.getPriority()));
+        row.setStatus(statusText(vo.getStatus()));
+        row.setDueDate(vo.getDueDate() != null ? vo.getDueDate().toString() : "");
+        row.setAssignees(vo.getAssignees() != null
+                ? vo.getAssignees().stream().map(TaskAssigneeVO::getMemberName).collect(Collectors.joining("、"))
+                : "");
+        row.setCreatorName(vo.getCreatorName());
+        row.setDescription(vo.getDescription());
+        return row;
+    }
+
+    /**
+     * 优先级转中文
+     *
+     * @param priority 优先级
+     * @return 中文
+     */
+    private String priorityText(String priority) {
+        return switch (priority == null ? "medium" : priority) {
+            case "high" -> "高";
+            case "low" -> "低";
+            default -> "中";
+        };
+    }
+
+    /**
+     * 状态转中文
+     *
+     * @param status 状态
+     * @return 中文
+     */
+    private String statusText(String status) {
+        return switch (status == null ? "todo" : status) {
+            case "in_progress" -> "进行中";
+            case "done" -> "已完成";
+            default -> "待办";
+        };
     }
 }
