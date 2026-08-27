@@ -167,6 +167,80 @@ public class AnnouncementServiceImpl implements AnnouncementService {
         announcementMapper.deleteById(id);
     }
 
+    /**
+     * 切换公告置顶状态
+     */
+    @Override
+    @Transactional
+    public void toggleTop(Long id, Integer isTop) {
+        if (announcementMapper.selectById(id) == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "公告不存在");
+        }
+        Announcement announcement = new Announcement();
+        announcement.setId(id);
+        announcement.setIsTop(isTop != null ? isTop : 0);
+        announcementMapper.updateById(announcement);
+    }
+
+    /**
+     * 切换公告发布状态
+     */
+    @Override
+    @Transactional
+    public void updateStatus(Long id, String status) {
+        if (announcementMapper.selectById(id) == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "公告不存在");
+        }
+        Announcement announcement = new Announcement();
+        announcement.setId(id);
+        announcement.setStatus(status);
+        announcementMapper.updateById(announcement);
+    }
+
+    /**
+     * 分页查询公告（支持按状态筛选）
+     */
+    @Override
+    public PageResult<AnnouncementVO> findAllByPageWithStatus(long current, long size, String status) {
+        LambdaQueryWrapper<Announcement> wrapper = new LambdaQueryWrapper<Announcement>()
+                .orderByDesc(Announcement::getIsTop)
+                .orderByDesc(Announcement::getCreatedAt);
+
+        // 如果指定了状态，添加筛选条件
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(Announcement::getStatus, status);
+        }
+
+        Page<Announcement> page = announcementMapper.selectPage(new Page<>(current, size), wrapper);
+        List<AnnouncementVO> voList = page.getRecords().stream().map(this::toVO).collect(Collectors.toList());
+        return new PageResult<>(page.getCurrent(), page.getSize(), page.getTotal(), page.getPages(), voList);
+    }
+
+    /**
+     * 批量删除公告
+     */
+    @Override
+    @Transactional
+    public void deleteBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+
+        // 先删除所有关联的目标群
+        for (Long id : ids) {
+            if (announcementMapper.selectById(id) == null) {
+                throw new BusinessException(HttpStatus.NOT_FOUND, "公告" + id + "不存在");
+            }
+            targetMapper.delete(new LambdaQueryWrapper<AnnouncementTarget>()
+                    .eq(AnnouncementTarget::getAnnouncementId, id));
+        }
+
+        // 再批量删除公告
+        for (Long id : ids) {
+            announcementMapper.deleteById(id);
+        }
+    }
+
     // ── 内部方法 ──────────────────────
 
     /**
