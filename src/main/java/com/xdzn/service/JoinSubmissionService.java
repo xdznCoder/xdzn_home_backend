@@ -1,6 +1,7 @@
 package com.xdzn.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.JoinSubmission;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -29,6 +30,16 @@ public interface JoinSubmissionService extends IService<JoinSubmission> {
      * @return 报名记录列表
      */
     List<JoinSubmission> findAll();
+
+    /**
+     * 分页查询报名（按提交时间倒序，支持状态筛选）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param status  状态筛选（可选：pending/contacted/accepted/rejected）
+     * @return 分页结果
+     */
+    PageResult<JoinSubmission> findAllByPage(long current, long size, String status);
 
     /**
      * 更新报名处理状态

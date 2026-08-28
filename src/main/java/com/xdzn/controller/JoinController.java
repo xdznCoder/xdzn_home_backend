@@ -2,6 +2,7 @@ package com.xdzn.controller;
 
 import com.xdzn.common.Result;
 import com.xdzn.model.dto.CreateJoinDto;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.dto.UpdateJoinStatusDto;
 import com.xdzn.model.entity.JoinSubmission;
 import com.xdzn.service.JoinSubmissionService;
@@ -10,6 +11,10 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -68,6 +73,20 @@ public class JoinController {
         return Result.ok(joinService.findAll());
     }
 
+    @Operation(summary = "分页查询报名", description = "按提交时间倒序返回报名记录，支持状态筛选，需 admin 权限")
+    @GetMapping("/page")
+    public Result<PageResult<JoinSubmission>> findAllByPage(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于 1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页大小不能小于 1")
+            @Max(value = 100, message = "每页大小不能超过 100") long size,
+            @Parameter(description = "状态筛选(pending/contacted/accepted/rejected)")
+            @RequestParam(required = false)
+            @Pattern(regexp = "^(pending|contacted|accepted|rejected)$", message = "状态仅允许 pending/contacted/accepted/rejected") String status) {
+        return Result.ok(joinService.findAllByPage(current, size, status));
+    }
+
     /**
      * 更新报名处理状态
      *
@@ -87,6 +106,22 @@ public class JoinController {
     }
 
     /**
+     * 根据 id 查询报名记录
+     *
+     * @param id 报名记录 id
+     * @return 报名记录；不存在时返回 404
+     */
+    @Operation(summary = "查询报名详情", description = "根据 id 查询单条报名记录，需 admin 权限")
+    @GetMapping("/{id}")
+    public Result<JoinSubmission> findById(
+            @Parameter(description = "报名记录 id", required = true, example = "1")
+            @PathVariable Long id) {
+        JoinSubmission byId = joinService.getById(id);
+        if (byId == null) return Result.notFound();
+        return Result.ok(byId);
+    }
+
+    /**
      * 删除报名记录
      *
      * @param id 报名记录 id
@@ -94,15 +129,13 @@ public class JoinController {
      */
     @Operation(summary = "删除报名", description = "删除报名记录，需 admin 权限")
     @DeleteMapping("/{id}")
-    public Result<Void> delete(
-            @Parameter(description = "报名记录 id", required = true, example = "1")
-            @PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long id) {
         joinService.delete(id);
         return Result.ok();
     }
 
     /**
-     * 导出报名列表（需 admin 权限）
+     * 导出报名列表到 Excel（需 admin 权限）
      *
      * @param response HTTP 响应
      */

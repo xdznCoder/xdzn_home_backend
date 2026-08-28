@@ -1,9 +1,12 @@
 package com.xdzn.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xdzn.common.excel.ExcelService;
 import com.xdzn.mapper.JoinSubmissionMapper;
 import com.xdzn.model.dto.JoinExcelRow;
+import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.entity.JoinSubmission;
 import com.xdzn.service.JoinSubmissionService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -59,6 +62,26 @@ public class JoinSubmissionServiceImpl extends ServiceImpl<JoinSubmissionMapper,
     @Override
     public List<JoinSubmission> findAll() {
         return lambdaQuery().orderByDesc(JoinSubmission::getCreatedAt).list();
+    }
+
+    /**
+     * 分页查询报名记录（按提交时间倒序，支持状态筛选）
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param status  状态筛选（可选）
+     * @return 分页结果
+     */
+    @Override
+    public PageResult<JoinSubmission> findAllByPage(long current, long size, String status) {
+        Page<JoinSubmission> page = new Page<>(current, size);
+        LambdaQueryWrapper<JoinSubmission> wrapper = new LambdaQueryWrapper<>();
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(JoinSubmission::getStatus, status);
+        }
+        wrapper.orderByDesc(JoinSubmission::getCreatedAt);
+        Page<JoinSubmission> result = page(page, wrapper);
+        return new PageResult<>(result.getCurrent(), result.getSize(), result.getTotal(), result.getPages(), result.getRecords());
     }
 
     /**
