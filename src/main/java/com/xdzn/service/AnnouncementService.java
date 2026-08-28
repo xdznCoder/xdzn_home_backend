@@ -4,6 +4,8 @@ import com.xdzn.model.dto.AnnouncementDto;
 import com.xdzn.model.dto.PageResult;
 import com.xdzn.model.vo.AnnouncementVO;
 
+import java.util.List;
+
 /**
  * AnnouncementService
  * <p>
@@ -59,4 +61,37 @@ public interface AnnouncementService {
      * @param id 公告 id
      */
     void delete(Long id);
+
+    /**
+     * 切换公告置顶状态
+     *
+     * @param id    公告 id
+     * @param isTop 是否置顶(1 置顶 / 0 普通)
+     */
+    void toggleTop(Long id, Integer isTop);
+
+    /**
+     * 切换公告发布状态
+     *
+     * @param id     公告 id
+     * @param status 新状态(draft/published/archived)
+     */
+    void updateStatus(Long id, String status);
+
+    /**
+     * 分页查询公告(支持按状态筛选)
+     *
+     * @param current 当前页码
+     * @param size    每页大小
+     * @param status  状态筛选(可选)
+     * @return 分页结果
+     */
+    PageResult<AnnouncementVO> findAllByPageWithStatus(long current, long size, String status);
+
+    /**
+     * 批量删除公告
+     *
+     * @param ids 公告 id 列表
+     */
+    void deleteBatch(List<Long> ids);
 }

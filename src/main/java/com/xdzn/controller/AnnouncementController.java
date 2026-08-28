@@ -14,6 +14,9 @@ import jakarta.validation.constraints.Min;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * AnnouncementController
  * <p>
@@ -119,6 +122,58 @@ public class AnnouncementController {
             @Parameter(description = "公告 id", required = true, example = "1")
             @PathVariable @Min(value = 1, message = "id 不合法") Long id) {
         announcementService.delete(id);
+        return Result.ok();
+    }
+
+    /**
+     * 切换公告置顶状态
+     */
+    @Operation(summary = "切换公告置顶", description = "设置或取消公告置顶，需 captain 权限")
+    @PutMapping("/{id}/top")
+    public Result<Void> toggleTop(
+            @Parameter(description = "公告 id", required = true, example = "1")
+            @PathVariable @Min(value = 1, message = "id 不合法") Long id,
+            @RequestBody Map<String, Integer> body) {
+        announcementService.toggleTop(id, body.get("isTop"));
+        return Result.ok();
+    }
+
+    /**
+     * 切换公告发布状态
+     */
+    @Operation(summary = "切换公告状态", description = "切换公告发布状态(draft/published/archived)，需 captain 权限")
+    @PutMapping("/{id}/status")
+    public Result<Void> updateStatus(
+            @Parameter(description = "公告 id", required = true, example = "1")
+            @PathVariable @Min(value = 1, message = "id 不合法") Long id,
+            @RequestBody Map<String, String> body) {
+        announcementService.updateStatus(id, body.get("status"));
+        return Result.ok();
+    }
+
+    /**
+     * 分页查询公告（支持按状态筛选）
+     */
+    @Operation(summary = "分页查询公告（带状态筛选）", description = "登录成员可读，支持按状态筛选，按置顶优先+发布时间倒序")
+    @GetMapping("/page/status")
+    public Result<PageResult<AnnouncementVO>> findAllByPageWithStatus(
+            @Parameter(description = "当前页码", example = "1")
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于 1") long current,
+            @Parameter(description = "每页大小", example = "10")
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页大小不能小于 1")
+            @Max(value = 100, message = "每页大小不能超过 100") long size,
+            @Parameter(description = "状态筛选(draft/published/archived)", example = "published")
+            @RequestParam(required = false) String status) {
+        return Result.ok(announcementService.findAllByPageWithStatus(current, size, status));
+    }
+
+    /**
+     * 批量删除公告
+     */
+    @Operation(summary = "批量删除公告", description = "批量删除多个公告及其目标群关联，需 captain 权限")
+    @DeleteMapping("/batch")
+    public Result<Void> deleteBatch(@RequestBody List<Long> ids) {
+        announcementService.deleteBatch(ids);
         return Result.ok();
     }
 }
