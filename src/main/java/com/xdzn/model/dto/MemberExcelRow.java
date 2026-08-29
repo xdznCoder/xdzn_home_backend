@@ -74,18 +74,6 @@ public class MemberExcelRow {
     private String teamRole;
 
     /**
-     * 实习经历
-     */
-    @ExcelProperty("实习经历")
-    private String internship;
-
-    /**
-     * 获奖经历
-     */
-    @ExcelProperty("获奖经历")
-    private String awards;
-
-    /**
      * 展示排序号
      */
     @ExcelProperty("排序")

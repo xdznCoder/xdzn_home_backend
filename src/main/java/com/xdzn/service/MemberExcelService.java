@@ -69,7 +69,7 @@ public class MemberExcelService {
     public void exportTemplate(HttpServletResponse response) {
         List<MemberExcelRow> example = List.of(new MemberExcelRow(
                 null, "张三", "https://example.com/avatar.png", "后端", 2025, 2021,
-                "20230101", "软件工程", "核心成员", "示例实习经历", "示例获奖经历", 1));
+                "20230101", "软件工程", "核心成员", 1));
         excelService.export(response, example, MemberExcelRow.class, "导入模板", "成员导入模板");
     }
 
@@ -153,8 +153,6 @@ public class MemberExcelService {
         member.setStudentNo(row.getStudentNo());
         member.setMajor(row.getMajor());
         member.setTeamRole(row.getTeamRole());
-        member.setInternship(row.getInternship());
-        member.setAwards(row.getAwards());
         member.setOrder(row.getOrder());
     }
 
@@ -175,8 +173,6 @@ public class MemberExcelService {
                 member.getStudentNo(),
                 member.getMajor(),
                 member.getTeamRole(),
-                member.getInternship(),
-                member.getAwards(),
                 member.getOrder());
     }
 }

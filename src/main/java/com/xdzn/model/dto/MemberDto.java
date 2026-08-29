@@ -62,18 +62,6 @@ public class MemberDto {
     private String teamRole;
 
     /**
-     * 实习经历
-     */
-    @Size(max = 1000, message = "实习经历过长")
-    private String internship;
-
-    /**
-     * 获奖经历
-     */
-    @Size(max = 1000, message = "获奖经历过长")
-    private String awards;
-
-    /**
      * 关联用户ID
      */
     private Long userId;
