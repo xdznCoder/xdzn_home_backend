@@ -1,6 +1,7 @@
 package com.xdzn.model.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -49,6 +50,7 @@ public class AwardRecord {
     /**
      * 获奖等级（一等奖/二等奖等）
      */
+    @TableField(value = "`rank`")
     private String rank;
 
     /**
