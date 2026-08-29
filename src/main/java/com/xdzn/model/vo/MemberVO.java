@@ -21,8 +21,6 @@ public class MemberVO {
     private String studentNo;
     private String major;
     private String teamRole;
-    private String internship;
-    private String awards;
     private Integer order;
 
     /** 关联用户ID */

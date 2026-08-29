@@ -81,6 +81,10 @@ public class SaTokenConfig implements WebMvcConfigurer {
             SaRouter.match("/api/announcements/**", "/api/qq-groups/**")
                     .check(r -> StpUtil.checkLogin());
 
+            // 获奖/实习记录：读登录（成员档案展示），写/导出由下方通用规则要求 captain
+            SaRouter.match("/api/award-records/**", "/api/internship-records/**")
+                    .check(r -> StpUtil.checkLogin());
+
             // CMS 写接口需要登录 + admin 角色（资源分享写操作除外，由上方规则覆盖）
             SaRouter.match("/api/**")
                     .matchMethod("POST", "PUT", "PATCH", "DELETE")

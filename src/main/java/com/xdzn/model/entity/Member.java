@@ -67,16 +67,6 @@ public class Member {
     private String teamRole;
 
     /**
-     * 实习经历
-     */
-    private String internship;
-
-    /**
-     * 获奖经历
-     */
-    private String awards;
-
-    /**
      * 关联用户ID
      */
     private Long userId;
